@@ -14,27 +14,32 @@
     header{background:linear-gradient(135deg,var(--primary),#1a2530);color:#fff;padding:18px;border-radius:12px;text-align:center;box-shadow:var(--shadow);margin-bottom:18px}
     h1{font-size:1.6rem}
     .top-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+    .lang-select{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:600}
     .dashboard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
     .dashboard-card{background:#fff;padding:14px;border-radius:10px;text-align:center;box-shadow:var(--shadow)}
     .search-container{background:#fff;padding:14px;border-radius:10px;box-shadow:var(--shadow);margin-bottom:18px}
     .search-box{display:flex;gap:12px;align-items:center}
     .search-input{flex:1;padding:10px;border-radius:50px;border:1px solid #ddd}
-    .add-button,.search-button{padding:10px 14px;border-radius:50px;border:none;cursor:pointer}
+    .add-button,.search-button,.defects-button{padding:10px 14px;border-radius:50px;border:none;cursor:pointer}
     .add-button{background:var(--success);color:#fff}
     .search-button{background:linear-gradient(135deg,var(--secondary),#2980b9);color:#fff}
+    .defects-button{background:linear-gradient(135deg,#8e44ad,#9b59b6);color:#fff}
     .filters{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
     .filter-button{padding:8px 14px;border-radius:50px;border:1px solid #ddd;background:#fff;cursor:pointer}
     .filter-button.active{background:var(--secondary);color:#fff;border-color:var(--secondary)}
     .equipment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
     .equipment-card{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;padding:12px;display:flex;gap:12px;align-items:flex-start}
-    .equipment-image{width:140px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#eee}
+    .images-col{width:160px;flex-shrink:0}
+    .equipment-image{width:140px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#eee;display:block;margin-bottom:6px}
     .equipment-info{flex:1}
     .equipment-prefix{font-weight:700;color:var(--primary);margin-bottom:6px}
     .equipment-sub{color:var(--gray);font-size:0.95rem;margin-bottom:6px}
     .equipment-details{color:var(--gray);font-size:0.9rem;margin-bottom:6px}
     .equipment-actions{display:flex;gap:8px;margin-top:8px}
-    .edit-button{flex:1;background:linear-gradient(135deg,var(--secondary),#2980b9);color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
-    .delete-button{flex:1;background:linear-gradient(135deg,var(--accent),#c0392b);color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
+    .edit-button,.copy-button,.delete-button{flex:1;color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
+    .edit-button{background:linear-gradient(135deg,var(--secondary),#2980b9)}
+    .copy-button{background:linear-gradient(135deg,#16a085,#1abc9c)}
+    .delete-button{background:linear-gradient(135deg,var(--accent),#c0392b)}
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:2000;padding:20px}
     .modal.show{display:flex}
     .modal-content{background:#fff;border-radius:12px;padding:16px;max-width:980px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 36px rgba(0,0,0,.18)}
@@ -53,51 +58,73 @@
     .notification.success{background:var(--success)}.notification.error{background:var(--accent)}
     .config-note{font-size:0.9rem;color:var(--gray);margin-bottom:8px}
     @media(max-width:920px){.form-row{grid-template-columns:1fr}.dashboard{grid-template-columns:1fr}.equipment-grid{grid-template-columns:1fr}}
-  </style>
+  
+    /* Image preview modal */
+    .image-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);align-items:center;justify-content:center;z-index:3000;}
+    .image-modal.show{display:flex;}
+    .image-modal img{max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 0 20px rgba(0,0,0,.5);}
+
+</style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1><i class="fas fa-tools"></i> Gerenciador de Equipamentos — Completo</h1>
-      <p style="opacity:.9">Integrado ao Firestore do seu projeto — coleção <strong>equipments_v1</strong>.</p>
-    </header>
+  <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+    <div style="width:100px;height:70px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+      <img src="https://raw.githubusercontent.com/Leandroxx10/controledeequip/refs/heads/main/file_00000000fbb46230a8c8a01e0f8354e6.png" 
+           alt="Logo" 
+           style="max-width:100%;max-height:100%;object-fit:contain;">
+    </div>
+    <h1><i class="fas fa-tools"></i> <span id="appTitle">Gerenciador de Equipamentos Completo</span></h1>
+  </div>
+  <p style="opacity:.9" class="config-note">Conectado ao Firestore: <strong>sistema de equipamentos</strong>.</p>
+</header>
 
     <div class="top-controls">
-      <div class="config-note">Conectado ao Firestore: <strong>sistema-equipamentos-web</strong></div>
+      <div class="config-note" style="margin-right:8px;">Conectado ao Firestore: <strong>sistema de equipamentos</strong></div>
       <div style="flex:1"></div>
-      <button id="downloadBtn" class="filter-button"><i class="fas fa-download"></i> Baixar HTML atual</button>
+      <select id="langToggle" class="lang-select" aria-label="Selecionar idioma">
+        <option value="pt">Português</option>
+        <option value="en">English</option>
+        <option value="it">Italiano</option>
+        <option value="zh">中文</option>
+        <option value="ja">日本語</option>
+      </select>
     </div>
 
     <div class="dashboard">
       <div class="dashboard-card">
         <div style="font-size:22px;font-weight:700" id="totalEquipment">0</div>
-        <div style="color:var(--gray)">Total de Equipamentos</div>
+        <div style="color:var(--gray)"><span id="totalEquipmentLabel">Total de Equipamentos</span></div>
       </div>
       <div class="dashboard-card">
         <div style="font-size:22px;font-weight:700" id="totalProduction">0</div>
-        <div style="color:var(--gray)">Em Produção</div>
+        <div style="color:var(--gray)"><span id="totalProductionLabel">Em Produção</span></div>
       </div>
       <div class="dashboard-card">
         <div style="font-size:22px;font-weight:700" id="totalOut">0</div>
-        <div style="color:var(--gray)">Fora de Produção</div>
+        <div style="color:var(--gray)"><span id="totalOutLabel">Fora de Produção</span></div>
       </div>
     </div>
 
     <div class="search-container">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <h2 style="margin:0">Lista de Equipamentos</h2>
-        <button class="add-button" id="addButton"><i class="fas fa-plus"></i> Novo Equipamento</button>
+        <h2 style="margin:0" id="listTitle">Lista de Equipamentos</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="add-button" id="addButton"><i class="fas fa-plus"></i> <span id="addBtnText">Novo Equipamento</span></button>
+          <button class="defects-button" id="defectsButton"><i class="fas fa-exclamation-triangle"></i> <span id="defectsBtnText">Defeitos</span></button>
+        </div>
       </div>
 
       <div class="filters" id="filters">
-        <button class="filter-button active" data-filter="all">Todos</button>
-        <button class="filter-button" data-filter="production">Em Produção</button>
-        <button class="filter-button" data-filter="out">Fora de Produção</button>
+        <button class="filter-button active" data-filter="all"><span id="filterAll">Todos</span></button>
+        <button class="filter-button" data-filter="production"><span id="filterProduction">Em Produção</span></button>
+        <button class="filter-button" data-filter="out"><span id="filterOut">Fora de Produção</span></button>
       </div>
 
       <div class="search-box" style="margin-top:8px">
         <input id="searchInput" class="search-input" placeholder="Buscar por prefixo (Molde / Blank)..." />
-        <button id="searchButton" class="search-button"><i class="fas fa-search"></i> Procurar</button>
+        <button id="searchButton" class="search-button"><i class="fas fa-search"></i> <span id="searchBtnText">Procurar</span></button>
       </div>
     </div>
 
@@ -108,120 +135,265 @@
     </footer>
   </div>
 
-  <!-- Add/Edit Modal with all requested fields -->
+  <!-- Add/Edit Modal with requested fields and exact order -->
   <div class="modal" id="addModal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true">
       <div class="modal-header">
-        <h3 id="addModalTitle"><i class="fas fa-plus"></i> Novo Equipamento</h3>
+        <h3 id="addModalTitle"><i class="fas fa-plus"></i> <span id="addModalTitleText">Novo Equipamento</span></h3>
         <button class="close-button" data-close="addModal">&times;</button>
       </div>
       <form id="addForm">
+        <!-- 1. Prefixo Molde / Molde Almoxarifado -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addPrefixoMolde">PREFIXO MOLDE</label>
+            <label class="form-label" for="addPrefixoMolde">Prefixo Molde</label>
             <input id="addPrefixoMolde" class="form-input" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="addPrefixoBlank">PREFIXO BLANK</label>
-            <input id="addPrefixoBlank" class="form-input" />
+            <label class="form-label" for="addMoldeAlmox">Molde Almoxarifado</label>
+            <select id="addMoldeAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
           </div>
         </div>
 
+        <!-- 2. Prefixo Blank / Blank Almoxarifado -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addProcesso">PROCESSO</label>
+            <label class="form-label" for="addPrefixoBlank">Prefixo Blank</label>
+            <input id="addPrefixoBlank" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addBlankAlmox">Blank Almoxarifado</label>
+            <select id="addBlankAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Processo / Classe -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addProcesso">Processo</label>
             <select id="addProcesso" class="form-select" required>
               <option value="SG">SG</option><option value="DG">DG</option><option value="TG">TG</option><option value="QG">QG</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="addClasse">CLASSE</label>
+            <label class="form-label" for="addClasse">Classe</label>
             <select id="addClasse" class="form-select">
               <option>Classe A</option><option>Classe B</option><option>Classe C</option>
             </select>
           </div>
         </div>
 
+        <!-- Neckrings / Aneis Guias -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addNeckrings">NECKRINGS</label>
+            <label class="form-label" for="addNeckrings">Neckrings</label>
             <input id="addNeckrings" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="addAneisGuias">ANEIS GUIAS</label>
+            <label class="form-label" for="addAneisGuias">Aneis Guias</label>
             <input id="addAneisGuias" class="form-input" />
           </div>
         </div>
 
+        <!-- Thimbles / Machos -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addThimble">THIMBLE</label>
+            <label class="form-label" for="addThimble">Thimbles</label>
             <input id="addThimble" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="addMachos">MACHOS</label>
+            <label class="form-label" for="addMachos">Machos</label>
             <input id="addMachos" class="form-input" />
           </div>
         </div>
 
+        <!-- Coolers / Baffles -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addCoolers">COOLERS</label>
+            <label class="form-label" for="addCoolers">Coolers</label>
             <input id="addCoolers" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="addFundos">FUNDOS</label>
+            <label class="form-label" for="addBaffles">Baffles</label>
+            <input id="addBaffles" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Baffles Plugs / Funis -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addBafflesPlugs">Baffles Plugs</label>
+            <input id="addBafflesPlugs" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addFunis">Funis</label>
+            <input id="addFunis" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Fundos / Fundos Plugs -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addFundos">Fundos</label>
             <input id="addFundos" class="form-input" />
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addFundosPlugs">FUNDOS PLUGS</label>
+            <label class="form-label" for="addFundosPlugs">Fundos Plugs</label>
             <input id="addFundosPlugs" class="form-input" />
           </div>
+        </div>
+
+        <!-- Sopradores / Pinças -->
+        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addBaffle">BAFFLE</label>
-            <input id="addBaffle" class="form-input" />
+            <label class="form-label" for="addSopradores">Sopradores</label>
+            <input id="addSopradores" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addPincas">Pinças</label>
+            <input id="addPincas" class="form-input" />
           </div>
         </div>
 
+        <!-- Corredor select 1..15 / Prateleira -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="addBafflesPlug">BAFFLES PLUG</label>
-            <input id="addBafflesPlug" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="addPolimento">TIPO DE POLIMENTO</label>
-            <select id="addPolimento" class="form-select">
-              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option>
+            <label class="form-label" for="addCorredor">Corredor</label>
+            <select id="addCorredor" class="form-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
             </select>
           </div>
-        </div>
-
-        <!-- existing fields -->
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="addDiametroGargalo">Diâmetro do Gargalo (mm)</label>
-            <input id="addDiametroGargalo" type="number" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="addDiametroCorpo">Diâmetro do Corpo (mm)</label>
-            <input id="addDiametroCorpo" type="number" class="form-input" />
-          </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="addPrateleira">Prateleira</label>
             <input id="addPrateleira" class="form-input" />
           </div>
-          <div class="form-group">
-            <label class="form-label" for="addCorredor">Corredor</label>
-            <input id="addCorredor" class="form-input" />
+        </div>
+
+        <!-- Observações -->
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label" for="addObservacoesTopo">Observações</label>
+            <input id="addObservacoesTopo" class="form-input" />
           </div>
         </div>
 
+        <!-- Tipo de Polimento Molde / Tipo de Polimento Blank -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addPolimentoMolde">Tipo de Polimento Molde</label>
+            <select id="addPolimentoMolde" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addPolimentoBlank">Tipo de Polimento Blank</label>
+            <select id="addPolimentoBlank" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option><option>Sem Polimento</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Observações Ajustagem / Observações Causas de Troca -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addObservacaoAjustagem">Observações Ajustagem</label>
+            <input id="addObservacaoAjustagem" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addCausasTroca">Observações / Causas de Troca</label>
+            <input id="addCausasTroca" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Dimensional Gargalo / Dimensional Corpo -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addDiametroGargalo">Dimensional do Gargalo (mm)</label>
+            <input id="addDiametroGargalo" type="number" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addDiametroCorpo">Dimensional do Corpo (mm)</label>
+            <input id="addDiametroCorpo" type="number" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Observações Adicionais / Status -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addObservacoesAdicionais">Observações Adicionais</label>
+            <input id="addObservacoesAdicionais" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addStatus">Status</label>
+            <select id="addStatus" class="form-select">
+              <option value="production">Em produção</option>
+              <option value="out">Fora de produção</option>
+              <option value="sample">Amostra</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Images -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="addUrlImg1">URL da imagem 1</label>
@@ -233,69 +405,101 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label" for="addObservacaoAjustagem">Observação Ajustagem</label>
-            <input id="addObservacaoAjustagem" class="form-input" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="addCausasTroca">Observações / Causas de Troca</label>
-          <textarea id="addCausasTroca" class="form-textarea"></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="addStatus">Status</label>
-            <select id="addStatus" class="form-select">
-              <option value="production">Em Produção</option>
-              <option value="out">Fora de Produção</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="addObservacoes">Observações Adicionais</label>
-            <input id="addObservacoes" class="form-input" />
-          </div>
-        </div>
-
         <div class="form-actions">
-          <button type="button" class="cancel-button" data-close="addModal">Cancelar</button>
-          <button type="submit" class="save-button">Salvar</button>
+          <button type="button" class="cancel-button" data-close="addModal"><span id="cancelBtnText">Cancelar</span></button>
+          <button type="submit" class="save-button"><span id="saveBtnText">Salvar</span></button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Edit modal -->
+  <!-- Edit modal (same fields, same order) -->
   <div class="modal" id="editModal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="editModalTitle"><i class="fas fa-edit"></i> Editar Equipamento</h3>
+        <h3 id="editModalTitle"><i class="fas fa-edit"></i> <span id="editModalTitleText">Editar Equipamento</span></h3>
         <button class="close-button" data-close="editModal">&times;</button>
       </div>
       <form id="editForm">
         <input type="hidden" id="editId" />
+        <!-- fields replicated with edit* ids -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editPrefixoMolde">PREFIXO MOLDE</label>
+            <label class="form-label" for="editPrefixoMolde">Prefixo Molde</label>
             <input id="editPrefixoMolde" class="form-input" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editPrefixoBlank">PREFIXO BLANK</label>
-            <input id="editPrefixoBlank" class="form-input" />
+            <label class="form-label" for="editMoldeAlmox">Molde Almoxarifado</label>
+            <select id="editMoldeAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editProcesso">PROCESSO</label>
+            <label class="form-label" for="editPrefixoBlank">Prefixo Blank</label>
+            <input id="editPrefixoBlank" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editBlankAlmox">Blank Almoxarifado</label>
+            <select id="editBlankAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editProcesso">Processo</label>
             <select id="editProcesso" class="form-select" required>
               <option value="SG">SG</option><option value="DG">DG</option><option value="TG">TG</option><option value="QG">QG</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="editClasse">CLASSE</label>
+            <label class="form-label" for="editClasse">Classe</label>
             <select id="editClasse" class="form-select">
               <option>Classe A</option><option>Classe B</option><option>Classe C</option>
             </select>
@@ -304,81 +508,153 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editNeckrings">NECKRINGS</label>
+            <label class="form-label" for="editNeckrings">Neckrings</label>
             <input id="editNeckrings" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editAneisGuias">ANEIS GUIAS</label>
+            <label class="form-label" for="editAneisGuias">Aneis Guias</label>
             <input id="editAneisGuias" class="form-input" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editThimble">THIMBLE</label>
+            <label class="form-label" for="editThimble">Thimbles</label>
             <input id="editThimble" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editMachos">MACHOS</label>
+            <label class="form-label" for="editMachos">Machos</label>
             <input id="editMachos" class="form-input" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editCoolers">COOLERS</label>
+            <label class="form-label" for="editCoolers">Coolers</label>
             <input id="editCoolers" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editFundos">FUNDOS</label>
+            <label class="form-label" for="editBaffles">Baffles</label>
+            <input id="editBaffles" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editBafflesPlugs">Baffles Plugs</label>
+            <input id="editBafflesPlugs" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editFunis">Funis</label>
+            <input id="editFunis" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editFundos">Fundos</label>
             <input id="editFundos" class="form-input" />
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editFundosPlugs">FUNDOS PLUGS</label>
+            <label class="form-label" for="editFundosPlugs">Fundos Plugs</label>
             <input id="editFundosPlugs" class="form-input" />
           </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editBaffle">BAFFLE</label>
-            <input id="editBaffle" class="form-input" />
+            <label class="form-label" for="editSopradores">Sopradores</label>
+            <input id="editSopradores" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editPincas">Pinças</label>
+            <input id="editPincas" class="form-input" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editBafflesPlug">BAFFLES PLUG</label>
-            <input id="editBafflesPlug" class="form-input" />
+            <label class="form-label" for="editCorredor">Corredor</label>
+            <select id="editCorredor" class="form-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+            </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="editPolimento">TIPO DE POLIMENTO</label>
-            <select id="editPolimento" class="form-select">
+            <label class="form-label" for="editPrateleira">Prateleira</label>
+            <input id="editPrateleira" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label" for="editObservacoesTopo">Observações</label>
+            <input id="editObservacoesTopo" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editPolimentoMolde">Tipo de Polimento Molde</label>
+            <select id="editPolimentoMolde" class="form-select">
               <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editPolimentoBlank">Tipo de Polimento Blank</label>
+            <select id="editPolimentoBlank" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option><option>Sem Polimento</option>
             </select>
           </div>
         </div>
 
-        <!-- existing fields replicated -->
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editDiametroGargalo">Diâmetro do Gargalo (mm)</label>
+            <label class="form-label" for="editObservacaoAjustagem">Observações Ajustagem</label>
+            <input id="editObservacaoAjustagem" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editCausasTroca">Observações / Causas de Troca</label>
+            <input id="editCausasTroca" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editDiametroGargalo">Dimensional do Gargalo (mm)</label>
             <input id="editDiametroGargalo" type="number" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editDiametroCorpo">Diâmetro do Corpo (mm)</label>
+            <label class="form-label" for="editDiametroCorpo">Dimensional do Corpo (mm)</label>
             <input id="editDiametroCorpo" type="number" class="form-input" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="editPrateleira">Prateleira</label>
-            <input id="editPrateleira" class="form-input" />
+            <label class="form-label" for="editObservacoesAdicionais">Observações Adicionais</label>
+            <input id="editObservacoesAdicionais" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="editCorredor">Corredor</label>
-            <input id="editCorredor" class="form-input" />
+            <label class="form-label" for="editStatus">Status</label>
+            <select id="editStatus" class="form-select">
+              <option value="production">Em produção</option>
+              <option value="out">Fora de produção</option>
+              <option value="sample">Amostra</option>
+            </select>
           </div>
         </div>
 
@@ -393,37 +669,42 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label" for="editObservacaoAjustagem">Observação Ajustagem</label>
-            <input id="editObservacaoAjustagem" class="form-input" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="editCausasTroca">Observações / Causas de Troca</label>
-          <textarea id="editCausasTroca" class="form-textarea"></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="editStatus">Status</label>
-            <select id="editStatus" class="form-select">
-              <option value="production">Em Produção</option>
-              <option value="out">Fora de Produção</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="editObservacoes">Observações Adicionais</label>
-            <input id="editObservacoes" class="form-input" />
-          </div>
-        </div>
-
         <div class="form-actions">
-          <button type="button" class="cancel-button" data-close="editModal">Cancelar</button>
-          <button type="submit" class="save-button">Salvar Alterações</button>
+          <button type="button" class="cancel-button" data-close="editModal"><span id="cancelEditBtnText">Cancelar</span></button>
+          <button type="submit" class="save-button"><span id="saveEditBtnText">Salvar Alterações</span></button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Defeitos -->
+  <div class="modal" id="defectsModal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle"></i> <span id="defectsModalTitle">Defeitos</span></h3>
+        <button class="close-button" data-close="defectsModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="defectSelect">Selecione o defeito</label>
+        <select id="defectSelect" class="form-select">
+          <option value="">-- Selecione --</option>
+          <option value="H-">H-</option>
+          <option value="H+">H+</option>
+          <option value="C-">C-</option>
+          <option value="C+">C+</option>
+          <option value="Ombro Negativo">Ombro Negativo</option>
+          <option value="Friso">Friso</option>
+          <option value="Rebarba na terminação">Rebarba na terminação</option>
+          <option value="Marca de Molde">Marca de Molde</option>
+          <option value="Equipamento fora de Centro">Equipamento fora de Centro</option>
+          <option value="Pressão">Pressão</option>
+          <option value="Costura">Costura</option>
+        </select>
+      </div>
+      <div class="form-group" id="defectInfo" style="display:none">
+        <label class="form-label"> O que é| O que causa | Solução</label>
+        <textarea id="defectText" class="form-textarea" readonly></textarea>
+      </div>
     </div>
   </div>
 
@@ -432,10 +713,8 @@
 <script>
 /* Full integration with the user's firebaseConfig embedded.
    Collection used: equipments_v1
-   Note: This file contains your firebaseConfig as provided.
 */
 
-/* ====== User-provided firebaseConfig (embedded) ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyCGWcYx0EjUMfp7Up4BJIFlZBamOldsBZM",
   authDomain: "sistema-equipamentos-web.firebaseapp.com",
@@ -444,7 +723,6 @@ const firebaseConfig = {
   messagingSenderId: "1004971035686",
   appId: "1:1004971035686:web:c2de0aa19167b9a9246ae7"
 };
-/* ===================================================== */
 
 const ADMIN_PASSWORD = 'wmoldes2026';
 let useFirestore = false;
@@ -452,7 +730,7 @@ let db = null;
 let unsubSnapshot = null;
 let equipmentData = [];
 let currentFilter = 'all';
-let isAuthenticated = false;
+let currentLang = 'pt';
 
 const equipmentGrid = document.getElementById('equipmentGrid');
 const addButton = document.getElementById('addButton');
@@ -467,6 +745,12 @@ const notificationEl = document.getElementById('notification');
 const totalEquipment = document.getElementById('totalEquipment');
 const totalProduction = document.getElementById('totalProduction');
 const totalOut = document.getElementById('totalOut');
+const langToggle = document.getElementById('langToggle');
+const defectsButton = document.getElementById('defectsButton');
+const defectsModal = document.getElementById('defectsModal');
+const defectSelect = document.getElementById('defectSelect');
+const defectInfo = document.getElementById('defectInfo');
+const defectText = document.getElementById('defectText');
 
 function showNotification(msg, type='success') {
   notificationEl.textContent = msg;
@@ -497,10 +781,159 @@ function loadLocal() {
   if (raw) {
     try { equipmentData = JSON.parse(raw); } catch(e){ equipmentData = []; }
   } else {
-    equipmentData = []; // start empty
+    equipmentData = [];
     persistLocal();
   }
 }
+
+// Translations (basic UI strings)
+const translations = {
+  pt: {
+    appTitle: 'Gerenciador de Equipamentos Completo',
+    connected: 'Conectado ao Firestore: <strong>sistema de equipamentos</strong>.',
+    totalEquipmentLabel: 'Total de Equipamentos',
+    totalProductionLabel: 'Em Produção',
+    totalOutLabel: 'Fora de Produção',
+    listTitle: 'Lista de Equipamentos',
+    addNew: 'Adicionar Equipamento',
+    defects: 'Defeitos',
+    filterAll: 'Todos',
+    filterProduction: 'Em Produção',
+    filterOut: 'Fora de Produção',
+    searchPlaceholder: 'Buscar por prefixo (Molde / Blank)...',
+    searchButton: 'Procurar',
+    addModalTitle: 'Novo Equipamento',
+    editModalTitle: 'Editar Equipamento',
+    saveButton: 'Salvar',
+    cancelButton: 'Cancelar',
+    editButton: 'Editar',
+    deleteButton: 'Excluir',
+    copyButton: 'Copiar',
+    notificationCopied: 'Dados copiados!'
+  },
+  en: {
+    appTitle: 'Equipment Manager Complete',
+    connected: 'Connected to Firestore: <strong>equipment system</strong>.',
+    totalEquipmentLabel: 'Total Equipment',
+    totalProductionLabel: 'In Production',
+    totalOutLabel: 'Out of Production',
+    listTitle: 'Equipment List',
+    addNew: 'New Equipment',
+    defects: 'Defects',
+    filterAll: 'All',
+    filterProduction: 'In Production',
+    filterOut: 'Out of Production',
+    searchPlaceholder: 'Search by prefix (Mold / Blank)...',
+    searchButton: 'Search',
+    addModalTitle: 'New Equipment',
+    editModalTitle: 'Edit Equipment',
+    saveButton: 'Save',
+    cancelButton: 'Cancel',
+    editButton: 'Edit',
+    deleteButton: 'Delete',
+    copyButton: 'Copy',
+    notificationCopied: 'Data copied!'
+  },
+  it: {
+    appTitle: 'Gestore di Attrezzature Completo',
+    connected: 'Connesso a Firestore: <strong>sistema attrezzature</strong>.',
+    totalEquipmentLabel: 'Totale Attrezzature',
+    totalProductionLabel: 'In Produzione',
+    totalOutLabel: 'Fuori Produzione',
+    listTitle: 'Elenco Attrezzature',
+    addNew: 'Nuova Attrezzatura',
+    defects: 'Difetti',
+    filterAll: 'Tutti',
+    filterProduction: 'In Produzione',
+    filterOut: 'Fuori Produzione',
+    searchPlaceholder: 'Cerca per prefisso (Matrice / Blank)...',
+    searchButton: 'Cerca',
+    addModalTitle: 'Nuova Attrezzatura',
+    editModalTitle: 'Modifica Attrezzatura',
+    saveButton: 'Salva',
+    cancelButton: 'Annulla',
+    editButton: 'Modifica',
+    deleteButton: 'Elimina',
+    copyButton: 'Copia',
+    notificationCopied: 'Dati copiati!'
+  },
+  zh: {
+    appTitle: '完整设备管理器',
+    connected: '已连接到 Firestore：<strong>设备系统</strong>。',
+    totalEquipmentLabel: '设备总数',
+    totalProductionLabel: '生产中',
+    totalOutLabel: '停止生产',
+    listTitle: '设备列表',
+    addNew: '新增设备',
+    defects: '缺陷',
+    filterAll: '全部',
+    filterProduction: '生产中',
+    filterOut: '停止生产',
+    searchPlaceholder: '按前缀搜索（模具 / 毛坯）...',
+    searchButton: '搜索',
+    addModalTitle: '新增设备',
+    editModalTitle: '编辑设备',
+    saveButton: '保存',
+    cancelButton: '取消',
+    editButton: '编辑',
+    deleteButton: '删除',
+    copyButton: '复制',
+    notificationCopied: '已复制数据！'
+  },
+  ja: {
+    appTitle: '設備管理システム（完全版）',
+    connected: 'Firestore に接続済み: <strong>設備システム</strong>。',
+    totalEquipmentLabel: '設備合計',
+    totalProductionLabel: '稼働中',
+    totalOutLabel: '稼働外',
+    listTitle: '設備一覧',
+    addNew: '新規設備',
+    defects: '不良',
+    filterAll: 'すべて',
+    filterProduction: '稼働中',
+    filterOut: '稼働外',
+    searchPlaceholder: '接頭辞で検索（金型 / ブランク）...',
+    searchButton: '検索',
+    addModalTitle: '新規設備',
+    editModalTitle: '設備を編集',
+    saveButton: '保存',
+    cancelButton: 'キャンセル',
+    editButton: '編集',
+    deleteButton: '削除',
+    copyButton: 'コピー',
+    notificationCopied: 'データをコピーしました！'
+  }
+};
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  const t = translations[lang] || translations.pt;
+  document.getElementById('appTitle').textContent = t.appTitle;
+  document.querySelectorAll('.config-note').forEach(el => el.innerHTML = t.connected);
+  document.getElementById('totalEquipmentLabel').textContent = t.totalEquipmentLabel;
+  document.getElementById('totalProductionLabel').textContent = t.totalProductionLabel;
+  document.getElementById('totalOutLabel').textContent = t.totalOutLabel;
+  document.getElementById('listTitle').textContent = t.listTitle;
+  document.getElementById('addBtnText').textContent = t.addNew;
+  document.getElementById('defectsBtnText').textContent = t.defects;
+  document.getElementById('filterAll').textContent = t.filterAll;
+  document.getElementById('filterProduction').textContent = t.filterProduction;
+  document.getElementById('filterOut').textContent = t.filterOut;
+  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+  document.getElementById('searchBtnText').textContent = t.searchButton;
+  document.getElementById('addModalTitleText').textContent = t.addModalTitle;
+  document.getElementById('editModalTitleText').textContent = t.editModalTitle;
+  document.getElementById('saveBtnText').textContent = t.saveButton;
+  document.getElementById('cancelBtnText') && (document.getElementById('cancelBtnText').textContent = t.cancelButton);
+  document.getElementById('cancelEditBtnText') && (document.getElementById('cancelEditBtnText').textContent = t.cancelButton);
+  document.getElementById('saveEditBtnText') && (document.getElementById('saveEditBtnText').textContent = t.saveButton);
+  // Re-render equipment to update per-card button labels
+  renderEquipment(applyCurrentFilterArray());
+}
+
+langToggle.addEventListener('change', (e) => {
+  applyLanguage(e.target.value);
+});
 
 // Render helpers
 function renderEquipment(list) {
@@ -510,31 +943,36 @@ function renderEquipment(list) {
     updateDashboard();
     return;
   }
+  const t = translations[currentLang] || translations.pt;
   list.forEach(eq => {
     const card = document.createElement('div'); card.className = 'equipment-card';
-    const imgUrl = eq.urlImg1 || eq.urlImg2 || '';
-    const imgHtml = imgUrl ? `<img class="equipment-image" src="${imgUrl}" alt="Imagem">` : `<div class="equipment-image"></div>`;
+    let imgHtml = '';
+    if (eq.urlImg1) imgHtml += `<img class="equipment-image" src="${eq.urlImg1}" alt="Imagem 1">`;
+    if (eq.urlImg2) imgHtml += `<img class="equipment-image" src="${eq.urlImg2}" alt="Imagem 2">`;
+    if (!imgHtml) imgHtml = `<div class="equipment-image"></div>`;
     card.innerHTML = `
-      ${imgHtml}
+      <div class="images-col">
+        ${imgHtml}
+      </div>
       <div class="equipment-info">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
             <div class="equipment-prefix">${eq.prefixoMolde || '-'}</div>
-            <div class="equipment-sub">${eq.prefixoBlank ? 'Blank: ' + eq.prefixoBlank : ''}</div>
+            <div class="equipment-sub">Blank: ${eq.prefixoBlank || '-'}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-weight:700">${eq.processo || '-'}</div>
-            <div style="font-size:0.85rem;color:${eq.status==='production' ? '#27ae60' : '#c0392b'}">${eq.status==='production' ? 'Em produção' : 'Fora'}</div>
+            <div style="font-weight:700">Classe: ${eq.classe || '-'}</div>
+            <div style="font-size:0.85rem;color:${eq.status==='production' ? '#27ae60' : (eq.status==='sample' ? '#f39c12' : '#c0392b')}">
+              ${eq.status==='production' ? 'Em produção' : (eq.status==='sample' ? 'Amostra' : 'Fora')}
+            </div>
           </div>
         </div>
-
-        <div class="equipment-details"><strong>Classe:</strong> ${eq.classe || '-' } • <strong>Polimento:</strong> ${eq.polimento || '-'}</div>
         <div class="equipment-details">Neckrings: ${eq.neckrings || '-'} • Aneis Guias: ${eq.aneisGuias || '-'}</div>
-        <div class="equipment-details">Thimble: ${eq.thimble || '-'} • Machos: ${eq.machos || '-'}</div>
-        <div class="equipment-details">Coolers: ${eq.coolers || '-'} • Fundos: ${eq.fundos || '-'} • Fundos Plugs: ${eq.fundosPlugs || '-'}</div>
+        <div class="equipment-details">Almox Molde: ${eq.moldeAlmox || '-'} • Almox Blank: ${eq.blankAlmox || '-'}</div>
         <div class="equipment-actions">
-          <button class="edit-button" data-id="${eq.id}"><i class="fas fa-edit"></i> Editar</button>
-          <button class="delete-button" data-id="${eq.id}"><i class="fas fa-trash"></i> Excluir</button>
+          <button class="edit-button" data-id="${eq.id}"><i class="fas fa-edit"></i> ${t.editButton}</button>
+          <button class="copy-button" data-id="${eq.id}"><i class="fas fa-copy"></i> ${t.copyButton}</button>
+          <button class="delete-button" data-id="${eq.id}"><i class="fas fa-trash"></i> ${t.deleteButton}</button>
         </div>
       </div>
     `;
@@ -546,6 +984,55 @@ function renderEquipment(list) {
     btn.addEventListener('click', (e)=>{
       const id = btn.getAttribute('data-id');
       openEditModal(id);
+    });
+  });
+  document.querySelectorAll('.copy-button').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id = btn.getAttribute('data-id');
+      const eq = equipmentData.find(x=>x.id===id);
+      if (!eq) return;
+      // Prefer a human-readable copy payload
+      const copyText = `
+Prefixo Molde: ${eq.prefixoMolde || ''}
+Prefixo Blank: ${eq.prefixoBlank || ''}
+Processo: ${eq.processo || ''}
+Neckrings: ${eq.neckrings || ''}
+Aneis Guias: ${eq.aneisGuias || ''}
+Thimbles: ${eq.thimble || ''}
+Machos: ${eq.machos || ''}
+Coolers: ${eq.coolers || ''}
+Baffles: ${eq.baffles || ''}
+Baffles Plugs: ${eq.bafflesPlugs || ''}
+Funis: ${eq.funis || ''}
+Fundos: ${eq.fundos || ''}
+Fundos Plugs: ${eq.fundosPlugs || ''}
+Sopradores: ${eq.sopradores || ''}
+Pinças: ${eq.pincas || ''}
+Almox Molde: ${eq.moldeAlmox || ''}
+Almox Blank: ${eq.blankAlmox || ''}
+Corredor: ${eq.corredor || ''}
+Prateleira: ${eq.prateleira || ''}
+`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyText).then(()=> {
+          showNotification(translations[currentLang].notificationCopied);
+        }).catch(err=>{
+          // fallback
+          const ta = document.createElement('textarea');
+          ta.value = copyText;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showNotification(translations[currentLang].notificationCopied); } catch(e){ alert('Copy failed'); }
+          ta.remove();
+        });
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = copyText;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showNotification(translations[currentLang].notificationCopied); } catch(e){ alert('Copy failed'); }
+        ta.remove();
+      }
     });
   });
   document.querySelectorAll('.delete-button').forEach(btn=>{
@@ -604,13 +1091,16 @@ filters.forEach(btn=>{
 
 searchButton.addEventListener('click', searchEquipment);
 searchInput.addEventListener('keypress', (e)=>{ if (e.key === 'Enter') searchEquipment(); });
+// filtro automático conforme digita:
+searchInput.addEventListener('input', searchEquipment);
+
 function searchEquipment() {
   const term = (searchInput.value || '').trim().toLowerCase();
   if (!term) { renderEquipment(applyCurrentFilterArray()); return; }
   const result = equipmentData.filter(e=>{
     const pm = (e.prefixoMolde||'').toLowerCase();
     const pb = (e.prefixoBlank||'').toLowerCase();
-    return (pm.includes(term) || pb.includes(term)) && (currentFilter==='all' ? true : e.status===currentFilter);
+    return (pm.includes(term) || pb.includes(term) || (e.moldeAlmox||'').toLowerCase().includes(term)) && (currentFilter==='all' ? true : e.status===currentFilter);
   });
   renderEquipment(result);
 }
@@ -624,7 +1114,9 @@ addForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const novo = {
     prefixoMolde: document.getElementById('addPrefixoMolde').value || '',
+    moldeAlmox: document.getElementById('addMoldeAlmox').value || '',
     prefixoBlank: document.getElementById('addPrefixoBlank').value || '',
+    blankAlmox: document.getElementById('addBlankAlmox').value || '',
     processo: document.getElementById('addProcesso').value || '',
     classe: document.getElementById('addClasse').value || '',
     neckrings: document.getElementById('addNeckrings').value || '',
@@ -632,21 +1124,26 @@ addForm.addEventListener('submit', async (e)=>{
     thimble: document.getElementById('addThimble').value || '',
     machos: document.getElementById('addMachos').value || '',
     coolers: document.getElementById('addCoolers').value || '',
+    baffles: document.getElementById('addBaffles').value || '',
+    bafflesPlugs: document.getElementById('addBafflesPlugs').value || '',
+    funis: document.getElementById('addFunis').value || '',
     fundos: document.getElementById('addFundos').value || '',
     fundosPlugs: document.getElementById('addFundosPlugs').value || '',
-    baffle: document.getElementById('addBaffle').value || '',
-    bafflesPlug: document.getElementById('addBafflesPlug').value || '',
-    polimento: document.getElementById('addPolimento').value || '',
-    diametroGargalo: Number(document.getElementById('addDiametroGargalo').value) || 0,
-    diametroCorpo: Number(document.getElementById('addDiametroCorpo').value) || 0,
-    prateleira: document.getElementById('addPrateleira').value || '',
+    sopradores: document.getElementById('addSopradores').value || '',
+    pincas: document.getElementById('addPincas').value || '',
     corredor: document.getElementById('addCorredor').value || '',
-    urlImg1: document.getElementById('addUrlImg1').value || '',
-    urlImg2: document.getElementById('addUrlImg2').value || '',
+    prateleira: document.getElementById('addPrateleira').value || '',
+    observacoesTopo: document.getElementById('addObservacoesTopo').value || '',
+    polimentoMolde: document.getElementById('addPolimentoMolde').value || '',
+    polimentoBlank: document.getElementById('addPolimentoBlank').value || '',
     observacaoAjustagem: document.getElementById('addObservacaoAjustagem').value || '',
     causasTroca: document.getElementById('addCausasTroca').value || '',
+    diametroGargalo: Number(document.getElementById('addDiametroGargalo').value) || 0,
+    diametroCorpo: Number(document.getElementById('addDiametroCorpo').value) || 0,
+    observacoesAdicionais: document.getElementById('addObservacoesAdicionais').value || '',
     status: document.getElementById('addStatus').value || 'production',
-    observacoes: document.getElementById('addObservacoes').value || '',
+    urlImg1: document.getElementById('addUrlImg1').value || '',
+    urlImg2: document.getElementById('addUrlImg2').value || '',
     criadoEm: new Date().toISOString()
   };
   const senha = prompt('Digite a senha de autorização para salvar:');
@@ -654,7 +1151,6 @@ addForm.addEventListener('submit', async (e)=>{
   try {
     if (useFirestore && db) {
       await addToFirestore(novo);
-      // Firestore snapshot will refresh UI
     } else {
       novo.id = String(Date.now());
       equipmentData.push(novo);
@@ -675,7 +1171,9 @@ function openEditModal(id) {
   if (!eq) return alert('Equipamento não encontrado');
   document.getElementById('editId').value = eq.id;
   document.getElementById('editPrefixoMolde').value = eq.prefixoMolde || '';
+  document.getElementById('editMoldeAlmox').value = eq.moldeAlmox || '';
   document.getElementById('editPrefixoBlank').value = eq.prefixoBlank || '';
+  document.getElementById('editBlankAlmox').value = eq.blankAlmox || '';
   document.getElementById('editProcesso').value = eq.processo || '';
   document.getElementById('editClasse').value = eq.classe || '';
   document.getElementById('editNeckrings').value = eq.neckrings || '';
@@ -683,29 +1181,39 @@ function openEditModal(id) {
   document.getElementById('editThimble').value = eq.thimble || '';
   document.getElementById('editMachos').value = eq.machos || '';
   document.getElementById('editCoolers').value = eq.coolers || '';
+  document.getElementById('editBaffles').value = eq.baffles || '';
+  document.getElementById('editBafflesPlugs').value = eq.bafflesPlugs || '';
+  document.getElementById('editFunis').value = eq.funis || '';
   document.getElementById('editFundos').value = eq.fundos || '';
   document.getElementById('editFundosPlugs').value = eq.fundosPlugs || '';
-  document.getElementById('editBaffle').value = eq.baffle || '';
-  document.getElementById('editBafflesPlug').value = eq.bafflesPlug || '';
-  document.getElementById('editPolimento').value = eq.polimento || '';
-  document.getElementById('editDiametroGargalo').value = eq.diametroGargalo || '';
-  document.getElementById('editDiametroCorpo').value = eq.diametroCorpo || '';
-  document.getElementById('editPrateleira').value = eq.prateleira || '';
+  document.getElementById('editSopradores').value = eq.sopradores || '';
+  document.getElementById('editPincas').value = eq.pincas || '';
   document.getElementById('editCorredor').value = eq.corredor || '';
-  document.getElementById('editUrlImg1').value = eq.urlImg1 || '';
-  document.getElementById('editUrlImg2').value = eq.urlImg2 || '';
+  document.getElementById('editPrateleira').value = eq.prateleira || '';
+  document.getElementById('editObservacoesTopo').value = eq.observacoesTopo || '';
+  document.getElementById('editPolimentoMolde').value = eq.polimentoMolde || '';
+  document.getElementById('editPolimentoBlank').value = eq.polimentoBlank || '';
   document.getElementById('editObservacaoAjustagem').value = eq.observacaoAjustagem || '';
   document.getElementById('editCausasTroca').value = eq.causasTroca || '';
+  document.getElementById('editDiametroGargalo').value = eq.diametroGargalo || '';
+  document.getElementById('editDiametroCorpo').value = eq.diametroCorpo || '';
+  document.getElementById('editObservacoesAdicionais').value = eq.observacoesAdicionais || '';
   document.getElementById('editStatus').value = eq.status || 'production';
-  document.getElementById('editObservacoes').value = eq.observacoes || '';
+  document.getElementById('editUrlImg1').value = eq.urlImg1 || '';
+  document.getElementById('editUrlImg2').value = eq.urlImg2 || '';
   openModal(editModal);
 }
 editForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
+  const senha = prompt('Digite a senha de autorização para salvar alterações:');
+  if (senha !== ADMIN_PASSWORD) { alert('Senha incorreta. Operação cancelada.'); return; }
+
   const id = document.getElementById('editId').value;
   const payload = {
     prefixoMolde: document.getElementById('editPrefixoMolde').value || '',
+    moldeAlmox: document.getElementById('editMoldeAlmox').value || '',
     prefixoBlank: document.getElementById('editPrefixoBlank').value || '',
+    blankAlmox: document.getElementById('editBlankAlmox').value || '',
     processo: document.getElementById('editProcesso').value || '',
     classe: document.getElementById('editClasse').value || '',
     neckrings: document.getElementById('editNeckrings').value || '',
@@ -713,21 +1221,26 @@ editForm.addEventListener('submit', async (e)=>{
     thimble: document.getElementById('editThimble').value || '',
     machos: document.getElementById('editMachos').value || '',
     coolers: document.getElementById('editCoolers').value || '',
+    baffles: document.getElementById('editBaffles').value || '',
+    bafflesPlugs: document.getElementById('editBafflesPlugs').value || '',
+    funis: document.getElementById('editFunis').value || '',
     fundos: document.getElementById('editFundos').value || '',
     fundosPlugs: document.getElementById('editFundosPlugs').value || '',
-    baffle: document.getElementById('editBaffle').value || '',
-    bafflesPlug: document.getElementById('editBafflesPlug').value || '',
-    polimento: document.getElementById('editPolimento').value || '',
-    diametroGargalo: Number(document.getElementById('editDiametroGargalo').value) || 0,
-    diametroCorpo: Number(document.getElementById('editDiametroCorpo').value) || 0,
-    prateleira: document.getElementById('editPrateleira').value || '',
+    sopradores: document.getElementById('editSopradores').value || '',
+    pincas: document.getElementById('editPincas').value || '',
     corredor: document.getElementById('editCorredor').value || '',
-    urlImg1: document.getElementById('editUrlImg1').value || '',
-    urlImg2: document.getElementById('editUrlImg2').value || '',
+    prateleira: document.getElementById('editPrateleira').value || '',
+    observacoesTopo: document.getElementById('editObservacoesTopo').value || '',
+    polimentoMolde: document.getElementById('editPolimentoMolde').value || '',
+    polimentoBlank: document.getElementById('editPolimentoBlank').value || '',
     observacaoAjustagem: document.getElementById('editObservacaoAjustagem').value || '',
     causasTroca: document.getElementById('editCausasTroca').value || '',
+    diametroGargalo: Number(document.getElementById('editDiametroGargalo').value) || 0,
+    diametroCorpo: Number(document.getElementById('editDiametroCorpo').value) || 0,
+    observacoesAdicionais: document.getElementById('editObservacoesAdicionais').value || '',
     status: document.getElementById('editStatus').value || 'production',
-    observacoes: document.getElementById('editObservacoes').value || ''
+    urlImg1: document.getElementById('editUrlImg1').value || '',
+    urlImg2: document.getElementById('editUrlImg2').value || ''
   };
   try {
     if (useFirestore && db) {
@@ -744,6 +1257,20 @@ editForm.addEventListener('submit', async (e)=>{
   } catch(err){
     console.error(err);
     showNotification('Erro ao salvar. Veja console.','error');
+  }
+});
+
+
+// Image preview logic
+const imageModal = document.getElementById('imageModal');
+const imageModalImg = document.getElementById('imageModalImg');
+document.addEventListener('click',(e)=>{
+  if(e.target.classList.contains('equipment-image')){
+    imageModalImg.src = e.target.src;
+    imageModal.classList.add('show');
+  } else if(e.target === imageModal){
+    imageModal.classList.remove('show');
+    imageModalImg.src = '';
   }
 });
 
@@ -766,16 +1293,12 @@ async function initFirestoreWithConfig(cfg) {
         snapshot.forEach(snap => {
           equipmentData.push(Object.assign({id: snap.id}, snap.data()));
         });
-        // sort by criadoEm desc if present
         equipmentData.sort((a,b)=> (b.criadoEm || '') > (a.criadoEm || '') ? 1 : -1);
         renderEquipment(applyCurrentFilterArray());
       }, (err)=> {
         console.error('onSnapshot error', err);
         showNotification('Erro na sincronização com Firestore. Veja console.','error');
       });
-    } else {
-      // fallback load once
-      showNotification('onSnapshot não disponível — carregando uma vez.');
     }
     showNotification('Conectado ao Firestore com sucesso!');
   } catch(err){
@@ -799,7 +1322,6 @@ async function updateFirestore(id, payload) {
   const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
   const { doc, setDoc } = firestoreModule;
   const docRef = doc(db, 'equipments_v1', id);
-  // merge so we don't wipe other fields
   await setDoc(docRef, payload, { merge: true });
 }
 async function deleteFromFirestore(id) {
@@ -809,31 +1331,36 @@ async function deleteFromFirestore(id) {
   await deleteDoc(docRef);
 }
 
+// Defects modal logic
+defectsButton.addEventListener('click', ()=> openModal(defectsModal));
+defectSelect.addEventListener('change', ()=>{
+  if (!defectSelect.value) { defectInfo.style.display='none'; defectText.value=''; return; }
+  defectInfo.style.display='block';
+  if (defectSelect.value==='H+') defectText.value = 'Causa: choque térmico ou impacto.\nSolução: substituir a peça ou aplicar solda especializada e inspecionar procedimento de produção.';
+  if (defectSelect.value==='H-') defectText.value = 'Causa: uso prolongado e atrito.\nSolução: polimento, ajuste de tolerâncias e substituição conforme ciclo de vida.';(defectSelect.value==='desgaste')
+  if (defectSelect.value==='C+') defectText.value = 'Causa: exposição à umidade/ambiente corrosivo.\nSolução: limpeza, tratamento e proteção com óleo ou revestimento.';
+  if (defectSelect.value==='C-') defectText.value = 'Causa: exposição à umidade/ambiente corrosivo.\nSolução: limpeza, tratamento e proteção com óleo ou revestimento.';
+});
+
 // Auto-init Firestore with embedded config
 initFirestoreWithConfig(firebaseConfig);
-
-// Download current HTML
-document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const doctype = '<!doctype html>\\n';
-  const content = doctype + document.documentElement.outerHTML;
-  const blob = new Blob([content], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'testandoch_full_with_firestore_v2.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
 
 // Init fallback
 (function init(){
   if (!useFirestore) {
     loadLocal();
+    applyLanguage('pt');
     renderEquipment(applyCurrentFilterArray());
+  } else {
+    applyLanguage('pt');
   }
 })();
 </script>
+
+  <!-- Image Preview Modal -->
+  <div id="imageModal" class="image-modal">
+    <img id="imageModalImg" src="" alt="Preview">
+  </div>
+
 </body>
 </html>
