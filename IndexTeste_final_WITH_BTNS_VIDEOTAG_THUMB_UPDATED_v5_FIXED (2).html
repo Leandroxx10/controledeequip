@@ -1,0 +1,2462 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Gerenciador de Equipamentos — Firestore Integrado (Completo)</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--primary:#2c3e50;--secondary:#3498db;--success:#2ecc71;--accent:#e74c3c;--light:#ecf0f1;--dark:#2c3e50;--gray:#7f8c8d;--radius:12px;--shadow:0 6px 18px rgba(0,0,0,0.08);}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Montserrat',sans-serif}
+    body{background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);color:var(--dark);min-height:100vh;padding:20px}
+    .container{max-width:1400px;margin:0 auto}
+    header{background:linear-gradient(135deg,var(--primary),#1a2530);color:#fff;padding:18px;border-radius:12px;text-align:center;box-shadow:var(--shadow);margin-bottom:18px}
+    h1{font-size:1.6rem}
+    .top-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+    .lang-select{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:600}
+    .dashboard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+    .dashboard-card{background:#fff;padding:14px;border-radius:10px;text-align:center;box-shadow:var(--shadow)}
+    .search-container{background:#fff;padding:14px;border-radius:10px;box-shadow:var(--shadow);margin-bottom:18px}
+    .search-box{display:flex;gap:12px;align-items:center}
+    .search-input{flex:1;padding:10px;border-radius:50px;border:1px solid #ddd}
+    .add-button,.search-button,.defects-button{padding:10px 14px;border-radius:50px;border:none;cursor:pointer}
+    .add-button{background:var(--success);color:#fff}
+    .search-button{background:linear-gradient(135deg,var(--secondary),#2980b9);color:#fff}
+    .defects-button{background:linear-gradient(135deg,#8e44ad,#9b59b6);color:#fff}
+    .filters{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+    .filter-button{padding:8px 14px;border-radius:50px;border:1px solid #ddd;background:#fff;cursor:pointer}
+    .filter-button.active{background:var(--secondary);color:#fff;border-color:var(--secondary)}
+    .equipment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+    .equipment-card{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;padding:12px;display:flex;gap:12px;align-items:flex-start}
+    .images-col{width:160px;flex-shrink:0}
+    .equipment-image{width:140px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#eee;display:block;margin-bottom:6px}
+    .equipment-info{flex:1}
+    .equipment-prefix{font-weight:700;color:var(--primary);margin-bottom:6px}
+    .equipment-sub{color:var(--gray);font-size:0.95rem;margin-bottom:6px}
+    .equipment-details{color:var(--gray);font-size:0.9rem;margin-bottom:6px}
+    .equipment-actions{display:flex;gap:8px;margin-top:8px}
+    .edit-button,.copy-button,.delete-button{flex:1;color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
+    .edit-button{background:linear-gradient(135deg,var(--secondary),#2980b9)}
+    .copy-button{background:linear-gradient(135deg,#16a085,#1abc9c)}
+    .delete-button{background:linear-gradient(135deg,var(--accent),#c0392b)}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:2000;padding:20px}
+    .modal.show{display:flex}
+    .modal-content{background:#fff;border-radius:12px;padding:16px;max-width:980px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 36px rgba(0,0,0,.18)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .close-button{background:none;border:none;font-size:22px;cursor:pointer}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .form-group{margin-bottom:6px}
+    .form-label{display:block;margin-bottom:6px;font-weight:600;color:var(--primary);font-size:0.95rem}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px}
+    .form-textarea{min-height:90px;resize:vertical}
+    .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+    .cancel-button{background:#7f8c8d;color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+    .save-button{background:linear-gradient(135deg,var(--success),#27ae60);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+    .notification{position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:8px;color:#fff;display:none;z-index:3000}
+    .notification.show{display:block}
+    .notification.success{background:var(--success)}.notification.error{background:var(--accent)}
+    .config-note{font-size:0.9rem;color:var(--gray);margin-bottom:8px}
+    @media(max-width:920px){.form-row{grid-template-columns:1fr}.dashboard{grid-template-columns:1fr}.equipment-grid{grid-template-columns:1fr}}
+  
+    /* Image preview modal */
+    .image-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);align-items:center;justify-content:center;z-index:3000;}
+    .image-modal.show{display:flex;}
+    .image-modal img{max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 0 20px rgba(0,0,0,.5);}
+
+  /* Tabs Section */
+    .tabs {display:flex;gap:12px;margin-bottom:16px;}
+    .tab-button {flex:1;padding:12px;background:#ecf0f1;border:none;border-radius:8px;cursor:pointer;font-weight:600;}
+    .tab-button.active {background:linear-gradient(135deg,#3498db,#2980b9);color:#fff;}
+    .tab-content {display:none;}
+    .tab-content.active {display:block;}
+    .video-list {display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;}
+    .video-card {background:#fff;border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,0.08);}
+    .video-card h3{margin-bottom:8px;font-size:1.2rem;color:#3498db}
+    .video-card iframe{width:100%;height:220px;border:none;border-radius:12px;margin-bottom:8px}
+    .video-card p{color:#7f8c8d;font-size:0.95rem}
+    .video-search {margin-bottom:16px;display:flex;gap:8px}
+    .video-search input {flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+    .video-add {margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+    .video-add label{font-weight:600;color:#2c3e50;display:block;margin-top:8px}
+    .video-add input,.video-add textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:4px}
+    .video-add button{margin-top:12px;padding:10px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff;cursor:pointer}
+
+/* ADICIONADO: estilos para miniaturas de vídeo */
+.video-iframe{position:relative;width:100%;background:#000;border-radius:12px;overflow:hidden}
+.video-iframe video{width:100%;height:auto;max-height:480px;display:block;border-radius:12px;background:#000}
+
+</style>
+
+<!-- INJECTED STYLE: minimal buttons -->
+<style>
+.video-actions button {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: 2px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease-in-out;
+}
+.video-actions button:hover {
+  background: #e0e0e0;
+  border-color: #bbb;
+}
+.video-actions .edit-btn {
+  color: #1565c0;
+}
+.video-actions .delete-btn {
+  color: #c62828;
+}
+</style>
+<!-- END STYLE -->
+
+</head>
+<body>
+  <div class="container">
+    <header>
+  <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+    <div style="width:100px;height:70px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+      <img src="https://raw.githubusercontent.com/Leandroxx10/controledeequip/refs/heads/main/file_00000000fbb46230a8c8a01e0f8354e6.png" 
+           alt="Logo" 
+           style="max-width:100%;max-height:100%;object-fit:contain;">
+    </div>
+    <h1><i class="fas fa-tools"></i> <span id="appTitle">Gerenciador de Equipamentos Completo</span></h1>
+  </div>
+  <p style="opacity:.9" class="config-note">Conectado ao Firestore: <strong>sistema de equipamentos</strong>.</p>
+</header>
+
+    <div class="top-controls">
+      <div class="config-note" style="margin-right:8px;">Conectado ao Firestore: <strong>sistema de equipamentos</strong></div>
+      <div style="flex:1"></div>
+      <select id="langToggle" class="lang-select" aria-label="Selecionar idioma">
+        <option value="pt">Português</option>
+        <option value="en">English</option>
+        <option value="it">Italiano</option>
+        <option value="zh">中文</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+
+    <div class="dashboard">
+      <div class="dashboard-card">
+        <div style="font-size:22px;font-weight:700" id="totalEquipment">0</div>
+        <div style="color:var(--gray)"><span id="totalEquipmentLabel">Total de Equipamentos</span></div>
+      </div>
+      <div class="dashboard-card">
+        <div style="font-size:22px;font-weight:700" id="totalProduction">0</div>
+        <div style="color:var(--gray)"><span id="totalProductionLabel">Em Produção</span></div>
+      </div>
+      <div class="dashboard-card">
+        <div style="font-size:22px;font-weight:700" id="totalOut">0</div>
+        <div style="color:var(--gray)"><span id="totalOutLabel">Fora de Produção</span></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-button active" id="tabEquip">Equipamentos</button>
+      <button class="tab-button" id="tabVideos">Video Aulas</button>
+    </div>
+
+    <div id="tabContentEquip" class="tab-content active"> 
+      <div class="search-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <h2 style="margin:0" id="listTitle">Lista de Equipamentos</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="add-button" id="addButton"><i class="fas fa-plus"></i> <span id="addBtnText">Novo Equipamento</span></button>
+          <button class="defects-button" id="defectsButton"><i class="fas fa-exclamation-triangle"></i> <span id="defectsBtnText">Defeitos</span></button>
+        </div>
+      </div>
+
+      <div class="filters" id="filters">
+        <button class="filter-button active" data-filter="all"><span id="filterAll">Todos</span></button>
+        <button class="filter-button" data-filter="production"><span id="filterProduction">Em Produção</span></button>
+        <button class="filter-button" data-filter="out"><span id="filterOut">Fora de Produção</span></button>
+      </div>
+
+      <div class="search-box" style="margin-top:8px">
+        <input id="searchInput" class="search-input" placeholder="Buscar por prefixo (Molde / Blank)..." />
+        <button id="searchButton" class="search-button"><i class="fas fa-search"></i> <span id="searchBtnText">Procurar</span></button>
+      </div>
+    </div>
+
+    <div id="equipmentGrid" class="equipment-grid"></div>
+
+    </div> <!-- fim da aba de equipamentos -->
+
+    <div id="tabContentVideos" class="tab-content">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;"><span><i class="fas fa-video"></i> Video Aulas</span><span style="font-size:0.9rem;color:#555;">Total: <span id="totalVideos">0</span></span></h2>
+      <div class="video-search">
+        <input type="text" id="videoSearch" placeholder="Buscar vídeos por título ou descrição...">
+      </div>
+      <div id="videoGrid" class="video-list"></div>
+
+      <div class="video-add">
+        <h3>Adicionar Novo Vídeo</h3>
+        <label for="videoTitulo">Título</label>
+        <input id="videoTitulo" required>
+        <label for="videoDescricao">Descrição</label>
+        <textarea id="videoDescricao"></textarea>
+        <label for="videoUrl">URL do Vídeo (embed YouTube)</label>
+        <input id="videoUrl" placeholder="https://www.youtube.com/embed/XXXX">
+        <button id="addVideoBtn"><i class="fas fa-save"></i> Salvar Vídeo</button>
+      </div>
+    </div>
+
+    <footer style="text-align:center;margin-top:18px;color:var(--gray)">
+      Sistema de Gerenciamento de Equipamentos — Versão Completa
+    </footer>
+  </div>
+
+  <!-- Add/Edit Modal with requested fields and exact order -->
+  <div class="modal" id="addModal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 id="addModalTitle"><i class="fas fa-plus"></i> <span id="addModalTitleText">Novo Equipamento</span></h3>
+        <button class="close-button" data-close="addModal">&times;</button>
+      </div>
+      <form id="addForm">
+        <!-- 1. Prefixo Molde / Molde Almoxarifado -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addPrefixoMolde">Prefixo Molde</label>
+            <input id="addPrefixoMolde" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addMoldeAlmox">Molde Almoxarifado</label>
+            <select id="addMoldeAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Prefixo Blank / Blank Almoxarifado -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addPrefixoBlank">Prefixo Blank</label>
+            <input id="addPrefixoBlank" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addBlankAlmox">Blank Almoxarifado</label>
+            <select id="addBlankAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Processo / Classe -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addProcesso">Processo</label>
+            <select id="addProcesso" class="form-select" required>
+              <option value="SG">SG</option><option value="DG">DG</option><option value="TG">TG</option><option value="QG">QG</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addClasse">Classe</label>
+            <select id="addClasse" class="form-select">
+              <option>Classe A</option><option>Classe B</option><option>Classe C</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Neckrings / Aneis Guias -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addNeckrings">Neckrings</label>
+            <input id="addNeckrings" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addAneisGuias">Aneis Guias</label>
+            <input id="addAneisGuias" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Thimbles / Machos -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addThimble">Thimbles</label>
+            <input id="addThimble" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addMachos">Machos</label>
+            <input id="addMachos" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Coolers / Baffles -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addCoolers">Coolers</label>
+            <input id="addCoolers" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addBaffles">Baffles</label>
+            <input id="addBaffles" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Baffles Plugs / Funis -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addBafflesPlugs">Baffles Plugs</label>
+            <input id="addBafflesPlugs" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addFunis">Funis</label>
+            <input id="addFunis" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Fundos / Fundos Plugs -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addFundos">Fundos</label>
+            <input id="addFundos" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addFundosPlugs">Fundos Plugs</label>
+            <input id="addFundosPlugs" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Sopradores / Pinças -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addSopradores">Sopradores</label>
+            <input id="addSopradores" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addPincas">Pinças</label>
+            <input id="addPincas" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Corredor select 1..15 / Prateleira -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addCorredor">Corredor</label>
+            <select id="addCorredor" class="form-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addPrateleira">Prateleira</label>
+            <input id="addPrateleira" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label" for="addObservacoesTopo">Observações</label>
+            <input id="addObservacoesTopo" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Tipo de Polimento Molde / Tipo de Polimento Blank -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addPolimentoMolde">Tipo de Polimento Molde</label>
+            <select id="addPolimentoMolde" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addPolimentoBlank">Tipo de Polimento Blank</label>
+            <select id="addPolimentoBlank" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option><option>Sem Polimento</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Observações Ajustagem / Observações Causas de Troca -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addObservacaoAjustagem">Observações Ajustagem</label>
+            <input id="addObservacaoAjustagem" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addCausasTroca">Observações / Causas de Troca</label>
+            <input id="addCausasTroca" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Dimensional Gargalo / Dimensional Corpo -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addDiametroGargalo">Dimensional do Gargalo (mm)</label>
+            <input id="addDiametroGargalo" type="number" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addDiametroCorpo">Dimensional do Corpo (mm)</label>
+            <input id="addDiametroCorpo" type="number" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Observações Adicionais / Status -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addObservacoesAdicionais">Observações Adicionais</label>
+            <input id="addObservacoesAdicionais" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addStatus">Status</label>
+            <select id="addStatus" class="form-select">
+              <option value="production">Em produção</option>
+              <option value="out">Fora de produção</option>
+              <option value="sample">Amostra</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="addUrlImg1">URL da imagem 1</label>
+            <input id="addUrlImg1" class="form-input" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addUrlImg2">URL da imagem 2</label>
+            <input id="addUrlImg2" class="form-input" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-button" data-close="addModal"><span id="cancelBtnText">Cancelar</span></button>
+          <button type="submit" class="save-button"><span id="saveBtnText">Salvar</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit modal (same fields, same order) -->
+  <div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="editModalTitle"><i class="fas fa-edit"></i> <span id="editModalTitleText">Editar Equipamento</span></h3>
+        <button class="close-button" data-close="editModal">&times;</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editId" />
+        <!-- fields replicated with edit* ids -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editPrefixoMolde">Prefixo Molde</label>
+            <input id="editPrefixoMolde" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editMoldeAlmox">Molde Almoxarifado</label>
+            <select id="editMoldeAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editPrefixoBlank">Prefixo Blank</label>
+            <input id="editPrefixoBlank" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editBlankAlmox">Blank Almoxarifado</label>
+            <select id="editBlankAlmox" class="form-select">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editProcesso">Processo</label>
+            <select id="editProcesso" class="form-select" required>
+              <option value="SG">SG</option><option value="DG">DG</option><option value="TG">TG</option><option value="QG">QG</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editClasse">Classe</label>
+            <select id="editClasse" class="form-select">
+              <option>Classe A</option><option>Classe B</option><option>Classe C</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editNeckrings">Neckrings</label>
+            <input id="editNeckrings" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editAneisGuias">Aneis Guias</label>
+            <input id="editAneisGuias" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editThimble">Thimbles</label>
+            <input id="editThimble" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editMachos">Machos</label>
+            <input id="editMachos" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editCoolers">Coolers</label>
+            <input id="editCoolers" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editBaffles">Baffles</label>
+            <input id="editBaffles" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editBafflesPlugs">Baffles Plugs</label>
+            <input id="editBafflesPlugs" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editFunis">Funis</label>
+            <input id="editFunis" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editFundos">Fundos</label>
+            <input id="editFundos" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editFundosPlugs">Fundos Plugs</label>
+            <input id="editFundosPlugs" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editSopradores">Sopradores</label>
+            <input id="editSopradores" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editPincas">Pinças</label>
+            <input id="editPincas" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editCorredor">Corredor</label>
+            <select id="editCorredor" class="form-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editPrateleira">Prateleira</label>
+            <input id="editPrateleira" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label" for="editObservacoesTopo">Observações</label>
+            <input id="editObservacoesTopo" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editPolimentoMolde">Tipo de Polimento Molde</label>
+            <select id="editPolimentoMolde" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editPolimentoBlank">Tipo de Polimento Blank</label>
+            <select id="editPolimentoBlank" class="form-select">
+              <option>Na madeira</option><option>Na máquina</option><option>Na politriz</option><option>Sem Polimento</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editObservacaoAjustagem">Observações Ajustagem</label>
+            <input id="editObservacaoAjustagem" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editCausasTroca">Observações / Causas de Troca</label>
+            <input id="editCausasTroca" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editDiametroGargalo">Dimensional do Gargalo (mm)</label>
+            <input id="editDiametroGargalo" type="number" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editDiametroCorpo">Dimensional do Corpo (mm)</label>
+            <input id="editDiametroCorpo" type="number" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editObservacoesAdicionais">Observações Adicionais</label>
+            <input id="editObservacoesAdicionais" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editStatus">Status</label>
+            <select id="editStatus" class="form-select">
+              <option value="production">Em produção</option>
+              <option value="out">Fora de produção</option>
+              <option value="sample">Amostra</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editUrlImg1">URL da imagem 1</label>
+            <input id="editUrlImg1" class="form-input" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editUrlImg2">URL da imagem 2</label>
+            <input id="editUrlImg2" class="form-input" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-button" data-close="editModal"><span id="cancelEditBtnText">Cancelar</span></button>
+          <button type="submit" class="save-button"><span id="saveEditBtnText">Salvar Alterações</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Defeitos -->
+  <div class="modal" id="defectsModal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle"></i> <span id="defectsModalTitle">Defeitos</span></h3>
+        <button class="close-button" data-close="defectsModal">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="defectSelect">Selecione o defeito</label>
+        <select id="defectSelect" class="form-select">
+          <option value="">-- Selecione --</option>
+          <option value="H-">H-</option>
+          <option value="H+">H+</option>
+          <option value="C-">C-</option>
+          <option value="C+">C+</option>
+          <option value="Ombro Negativo">Ombro Negativo</option>
+          <option value="Friso">Friso</option>
+          <option value="Rebarba na terminação">Rebarba na terminação</option>
+          <option value="Marca de Molde">Marca de Molde</option>
+          <option value="Equipamento fora de Centro">Equipamento fora de Centro</option>
+          <option value="Pressão">Pressão</option>
+          <option value="Costura">Costura</option>
+        </select>
+      </div>
+      <div class="form-group" id="defectInfo" style="display:none">
+        <label class="form-label"> O que é| O que causa | Solução</label>
+        <textarea id="defectText" class="form-textarea" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+<script>
+/* Full integration with the user's firebaseConfig embedded.
+   Collection used: equipments_v1
+*/
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCGWcYx0EjUMfp7Up4BJIFlZBamOldsBZM",
+  authDomain: "sistema-equipamentos-web.firebaseapp.com",
+  projectId: "sistema-equipamentos-web",
+  storageBucket: "sistema-equipamentos-web.firebasestorage.app",
+  messagingSenderId: "1004971035686",
+  appId: "1:1004971035686:web:c2de0aa19167b9a9246ae7"
+};
+
+const ADMIN_PASSWORD = 'wmoldes2026';
+let useFirestore = false;
+let db = null;
+let unsubSnapshot = null;
+let equipmentData = [];
+let currentFilter = 'all';
+let currentLang = 'pt';
+
+const equipmentGrid = document.getElementById('equipmentGrid');
+const addButton = document.getElementById('addButton');
+const addModal = document.getElementById('addModal');
+const editModal = document.getElementById('editModal');
+const addForm = document.getElementById('addForm');
+const editForm = document.getElementById('editForm');
+const searchInput = document.getElementById('searchInput');
+const searchButton = document.getElementById('searchButton');
+const filters = document.querySelectorAll('.filter-button');
+const notificationEl = document.getElementById('notification');
+const totalEquipment = document.getElementById('totalEquipment');
+const totalProduction = document.getElementById('totalProduction');
+const totalOut = document.getElementById('totalOut');
+const langToggle = document.getElementById('langToggle');
+const defectsButton = document.getElementById('defectsButton');
+const defectsModal = document.getElementById('defectsModal');
+const defectSelect = document.getElementById('defectSelect');
+const defectInfo = document.getElementById('defectInfo');
+const defectText = document.getElementById('defectText');
+
+function showNotification(msg, type='success') {
+  notificationEl.textContent = msg;
+  notificationEl.className = 'notification show ' + (type==='success' ? 'success' : 'error');
+  setTimeout(()=>{ notificationEl.className = 'notification'; }, 3000);
+}
+function openModal(modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+function closeModal(modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
+
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{
+    const id = btn.getAttribute('data-close');
+    const m = document.getElementById(id);
+    if (m) closeModal(m);
+  });
+});
+document.querySelectorAll('.modal').forEach(mod=>{
+  mod.addEventListener('click', (e)=>{
+    if (e.target === mod) closeModal(mod);
+  });
+});
+
+// localStorage helpers
+const STORAGE_KEY = 'equipments_v1';
+function persistLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(equipmentData)); }
+function loadLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { equipmentData = JSON.parse(raw); } catch(e){ equipmentData = []; }
+  } else {
+    equipmentData = [];
+    persistLocal();
+  }
+}
+
+// Translations (basic UI strings)
+const translations = {
+  pt: {
+    appTitle: 'Gerenciador de Equipamentos Completo',
+    connected: 'Conectado ao Firestore: <strong>sistema de equipamentos</strong>.',
+    totalEquipmentLabel: 'Total de Equipamentos',
+    totalProductionLabel: 'Em Produção',
+    totalOutLabel: 'Fora de Produção',
+    listTitle: 'Lista de Equipamentos',
+    addNew: 'Adicionar Equipamento',
+    defects: 'Defeitos',
+    filterAll: 'Todos',
+    filterProduction: 'Em Produção',
+    filterOut: 'Fora de Produção',
+    searchPlaceholder: 'Buscar por prefixo (Molde / Blank)...',
+    searchButton: 'Procurar',
+    addModalTitle: 'Novo Equipamento',
+    editModalTitle: 'Editar Equipamento',
+    saveButton: 'Salvar',
+    cancelButton: 'Cancelar',
+    editButton: 'Editar',
+    deleteButton: 'Excluir',
+    copyButton: 'Copiar',
+    notificationCopied: 'Dados copiados!'
+  },
+  en: {
+    appTitle: 'Equipment Manager Complete',
+    connected: 'Connected to Firestore: <strong>equipment system</strong>.',
+    totalEquipmentLabel: 'Total Equipment',
+    totalProductionLabel: 'In Production',
+    totalOutLabel: 'Out of Production',
+    listTitle: 'Equipment List',
+    addNew: 'New Equipment',
+    defects: 'Defects',
+    filterAll: 'All',
+    filterProduction: 'In Production',
+    filterOut: 'Out of Production',
+    searchPlaceholder: 'Search by prefix (Mold / Blank)...',
+    searchButton: 'Search',
+    addModalTitle: 'New Equipment',
+    editModalTitle: 'Edit Equipment',
+    saveButton: 'Save',
+    cancelButton: 'Cancel',
+    editButton: 'Edit',
+    deleteButton: 'Delete',
+    copyButton: 'Copy',
+    notificationCopied: 'Data copied!'
+  },
+  it: {
+    appTitle: 'Gestore di Attrezzature Completo',
+    connected: 'Connesso a Firestore: <strong>sistema attrezzature</strong>.',
+    totalEquipmentLabel: 'Totale Attrezzature',
+    totalProductionLabel: 'In Produzione',
+    totalOutLabel: 'Fuori Produzione',
+    listTitle: 'Elenco Attrezzature',
+    addNew: 'Nuova Attrezzatura',
+    defects: 'Difetti',
+    filterAll: 'Tutti',
+    filterProduction: 'In Produzione',
+    filterOut: 'Fuori Produzione',
+    searchPlaceholder: 'Cerca per prefisso (Matrice / Blank)...',
+    searchButton: 'Cerca',
+    addModalTitle: 'Nuova Attrezzatura',
+    editModalTitle: 'Modifica Attrezzatura',
+    saveButton: 'Salva',
+    cancelButton: 'Annulla',
+    editButton: 'Modifica',
+    deleteButton: 'Elimina',
+    copyButton: 'Copia',
+    notificationCopied: 'Dati copiati!'
+  },
+  zh: {
+    appTitle: '完整设备管理器',
+    connected: '已连接到 Firestore：<strong>设备系统</strong>。',
+    totalEquipmentLabel: '设备总数',
+    totalProductionLabel: '生产中',
+    totalOutLabel: '停止生产',
+    listTitle: '设备列表',
+    addNew: '新增设备',
+    defects: '缺陷',
+    filterAll: '全部',
+    filterProduction: '生产中',
+    filterOut: '停止生产',
+    searchPlaceholder: '按前缀搜索（模具 / 毛坯）...',
+    searchButton: '搜索',
+    addModalTitle: '新增设备',
+    editModalTitle: '编辑设备',
+    saveButton: '保存',
+    cancelButton: '取消',
+    editButton: '编辑',
+    deleteButton: '删除',
+    copyButton: '复制',
+    notificationCopied: '已复制数据！'
+  },
+  ja: {
+    appTitle: '設備管理システム（完全版）',
+    connected: 'Firestore に接続済み: <strong>設備システム</strong>。',
+    totalEquipmentLabel: '設備合計',
+    totalProductionLabel: '稼働中',
+    totalOutLabel: '稼働外',
+    listTitle: '設備一覧',
+    addNew: '新規設備',
+    defects: '不良',
+    filterAll: 'すべて',
+    filterProduction: '稼働中',
+    filterOut: '稼働外',
+    searchPlaceholder: '接頭辞で検索（金型 / ブランク）...',
+    searchButton: '検索',
+    addModalTitle: '新規設備',
+    editModalTitle: '設備を編集',
+    saveButton: '保存',
+    cancelButton: 'キャンセル',
+    editButton: '編集',
+    deleteButton: '削除',
+    copyButton: 'コピー',
+    notificationCopied: 'データをコピーしました！'
+  }
+};
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  const t = translations[lang] || translations.pt;
+  document.getElementById('appTitle').textContent = t.appTitle;
+  document.querySelectorAll('.config-note').forEach(el => el.innerHTML = t.connected);
+  document.getElementById('totalEquipmentLabel').textContent = t.totalEquipmentLabel;
+  document.getElementById('totalProductionLabel').textContent = t.totalProductionLabel;
+  document.getElementById('totalOutLabel').textContent = t.totalOutLabel;
+  document.getElementById('listTitle').textContent = t.listTitle;
+  document.getElementById('addBtnText').textContent = t.addNew;
+  document.getElementById('defectsBtnText').textContent = t.defects;
+  document.getElementById('filterAll').textContent = t.filterAll;
+  document.getElementById('filterProduction').textContent = t.filterProduction;
+  document.getElementById('filterOut').textContent = t.filterOut;
+  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+  document.getElementById('searchBtnText').textContent = t.searchButton;
+  document.getElementById('addModalTitleText').textContent = t.addModalTitle;
+  document.getElementById('editModalTitleText').textContent = t.editModalTitle;
+  document.getElementById('saveBtnText').textContent = t.saveButton;
+  document.getElementById('cancelBtnText') && (document.getElementById('cancelBtnText').textContent = t.cancelButton);
+  document.getElementById('cancelEditBtnText') && (document.getElementById('cancelEditBtnText').textContent = t.cancelButton);
+  document.getElementById('saveEditBtnText') && (document.getElementById('saveEditBtnText').textContent = t.saveButton);
+  // Re-render equipment to update per-card button labels
+  renderEquipment(applyCurrentFilterArray());
+}
+
+langToggle.addEventListener('change', (e) => {
+  applyLanguage(e.target.value);
+});
+
+// Render helpers
+function renderEquipment(list) {
+  equipmentGrid.innerHTML = '';
+  if (!list || list.length === 0) {
+    equipmentGrid.innerHTML = '<div style="grid-column:1/-1;background:#fff;padding:20px;border-radius:12px;box-shadow:var(--shadow);text-align:center">Nenhum equipamento encontrado.</div>';
+    updateDashboard();
+    return;
+  }
+  const t = translations[currentLang] || translations.pt;
+  list.forEach(eq => {
+    const card = document.createElement('div'); card.className = 'equipment-card';
+    let imgHtml = '';
+    if (eq.urlImg1) imgHtml += `<img class="equipment-image" src="${eq.urlImg1}" alt="Imagem 1">`;
+    if (eq.urlImg2) imgHtml += `<img class="equipment-image" src="${eq.urlImg2}" alt="Imagem 2">`;
+    if (!imgHtml) imgHtml = `<div class="equipment-image"></div>`;
+    card.innerHTML = `
+      <div class="images-col">
+        ${imgHtml}
+      </div>
+      <div class="equipment-info">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="equipment-prefix">${eq.prefixoMolde || '-'}</div>
+            <div class="equipment-sub">Blank: ${eq.prefixoBlank || '-'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700">Classe: ${eq.classe || '-'}</div>
+            <div style="font-size:0.85rem;color:${eq.status==='production' ? '#27ae60' : (eq.status==='sample' ? '#f39c12' : '#c0392b')}">
+              ${eq.status==='production' ? 'Em produção' : (eq.status==='sample' ? 'Amostra' : 'Fora')}
+            </div>
+          </div>
+        </div>
+        <div class="equipment-details">Neckrings: ${eq.neckrings || '-'} • Aneis Guias: ${eq.aneisGuias || '-'}</div>
+        <div class="equipment-details">Almox Molde: ${eq.moldeAlmox || '-'} • Almox Blank: ${eq.blankAlmox || '-'}</div>
+        <div class="equipment-actions">
+          <button class="edit-button" data-id="${eq.id}"><i class="fas fa-edit"></i> ${t.editButton}</button>
+          <button class="copy-button" data-id="${eq.id}"><i class="fas fa-copy"></i> ${t.copyButton}</button>
+          <button class="delete-button" data-id="${eq.id}"><i class="fas fa-trash"></i> ${t.deleteButton}</button>
+        </div>
+      </div>
+    `;
+    equipmentGrid.appendChild(card);
+  });
+
+  // attach actions
+  document.querySelectorAll('.edit-button').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id = btn.getAttribute('data-id');
+      openEditModal(id);
+    });
+  });
+  document.querySelectorAll('.copy-button').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id = btn.getAttribute('data-id');
+      const eq = equipmentData.find(x=>x.id===id);
+      if (!eq) return;
+      // Prefer a human-readable copy payload
+      const copyText = `
+Prefixo Molde: ${eq.prefixoMolde || ''}
+Prefixo Blank: ${eq.prefixoBlank || ''}
+Processo: ${eq.processo || ''}
+Neckrings: ${eq.neckrings || ''}
+Aneis Guias: ${eq.aneisGuias || ''}
+Thimbles: ${eq.thimble || ''}
+Machos: ${eq.machos || ''}
+Coolers: ${eq.coolers || ''}
+Baffles: ${eq.baffles || ''}
+Baffles Plugs: ${eq.bafflesPlugs || ''}
+Funis: ${eq.funis || ''}
+Fundos: ${eq.fundos || ''}
+Fundos Plugs: ${eq.fundosPlugs || ''}
+Sopradores: ${eq.sopradores || ''}
+Pinças: ${eq.pincas || ''}
+Almox Molde: ${eq.moldeAlmox || ''}
+Almox Blank: ${eq.blankAlmox || ''}
+Corredor: ${eq.corredor || ''}
+Prateleira: ${eq.prateleira || ''}
+`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyText).then(()=> {
+          showNotification(translations[currentLang].notificationCopied);
+        }).catch(err=>{
+          // fallback
+          const ta = document.createElement('textarea');
+          ta.value = copyText;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showNotification(translations[currentLang].notificationCopied); } catch(e){ alert('Copy failed'); }
+          ta.remove();
+        });
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = copyText;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showNotification(translations[currentLang].notificationCopied); } catch(e){ alert('Copy failed'); }
+        ta.remove();
+      }
+    });
+  });
+  document.querySelectorAll('.delete-button').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const id = btn.getAttribute('data-id');
+      const senha = prompt('Digite a senha de autorização para excluir:');
+      if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta. Exclusão cancelada.'); return; }
+      if (!confirm('Confirmar exclusão?')) return;
+      try {
+        if (useFirestore && db) {
+          await deleteFromFirestore(id);
+        } else {
+          equipmentData = equipmentData.filter(x=>x.id !== id);
+          persistLocal();
+          renderEquipment(applyCurrentFilterArray());
+        }
+        showNotification('Equipamento excluído com sucesso!');
+      } catch(err){
+        console.error(err);
+        showNotification('Erro ao excluir. Veja console.','error');
+      }
+    });
+  });
+
+  updateDashboard();
+}
+
+function updateDashboard() {
+  totalEquipment.textContent = equipmentData.length;
+  totalProduction.textContent = equipmentData.filter(e=>e.status==='production').length;
+  totalOut.textContent = equipmentData.filter(e=>e.status!=='production').length;
+}
+
+function applyCurrentFilterArray() {
+  return equipmentData.filter(e=>{
+    if (currentFilter === 'all') return true;
+    return e.status === currentFilter;
+  });
+}
+
+function loadAndRender() {
+  if (useFirestore && db) return;
+  loadLocal();
+  renderEquipment(applyCurrentFilterArray());
+}
+
+// Filters & Search
+filters.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    filters.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.getAttribute('data-filter');
+    renderEquipment(applyCurrentFilterArray());
+  });
+});
+
+searchButton.addEventListener('click', searchEquipment);
+searchInput.addEventListener('keypress', (e)=>{ if (e.key === 'Enter') searchEquipment(); });
+// filtro automático conforme digita:
+searchInput.addEventListener('input', searchEquipment);
+
+function searchEquipment() {
+  const term = (searchInput.value || '').trim().toLowerCase();
+  if (!term) { renderEquipment(applyCurrentFilterArray()); return; }
+  const result = equipmentData.filter(e=>{
+    const pm = (e.prefixoMolde||'').toLowerCase();
+    const pb = (e.prefixoBlank||'').toLowerCase();
+    return (pm.includes(term) || pb.includes(term) || (e.moldeAlmox||'').toLowerCase().includes(term)) && (currentFilter==='all' ? true : e.status===currentFilter);
+  });
+  renderEquipment(result);
+}
+
+// Add
+addButton.addEventListener('click', ()=>{
+  document.getElementById('addForm').reset();
+  openModal(addModal);
+});
+addForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const novo = {
+    prefixoMolde: document.getElementById('addPrefixoMolde').value || '',
+    moldeAlmox: document.getElementById('addMoldeAlmox').value || '',
+    prefixoBlank: document.getElementById('addPrefixoBlank').value || '',
+    blankAlmox: document.getElementById('addBlankAlmox').value || '',
+    processo: document.getElementById('addProcesso').value || '',
+    classe: document.getElementById('addClasse').value || '',
+    neckrings: document.getElementById('addNeckrings').value || '',
+    aneisGuias: document.getElementById('addAneisGuias').value || '',
+    thimble: document.getElementById('addThimble').value || '',
+    machos: document.getElementById('addMachos').value || '',
+    coolers: document.getElementById('addCoolers').value || '',
+    baffles: document.getElementById('addBaffles').value || '',
+    bafflesPlugs: document.getElementById('addBafflesPlugs').value || '',
+    funis: document.getElementById('addFunis').value || '',
+    fundos: document.getElementById('addFundos').value || '',
+    fundosPlugs: document.getElementById('addFundosPlugs').value || '',
+    sopradores: document.getElementById('addSopradores').value || '',
+    pincas: document.getElementById('addPincas').value || '',
+    corredor: document.getElementById('addCorredor').value || '',
+    prateleira: document.getElementById('addPrateleira').value || '',
+    observacoesTopo: document.getElementById('addObservacoesTopo').value || '',
+    polimentoMolde: document.getElementById('addPolimentoMolde').value || '',
+    polimentoBlank: document.getElementById('addPolimentoBlank').value || '',
+    observacaoAjustagem: document.getElementById('addObservacaoAjustagem').value || '',
+    causasTroca: document.getElementById('addCausasTroca').value || '',
+    diametroGargalo: Number(document.getElementById('addDiametroGargalo').value) || 0,
+    diametroCorpo: Number(document.getElementById('addDiametroCorpo').value) || 0,
+    observacoesAdicionais: document.getElementById('addObservacoesAdicionais').value || '',
+    status: document.getElementById('addStatus').value || 'production',
+    urlImg1: document.getElementById('addUrlImg1').value || '',
+    urlImg2: document.getElementById('addUrlImg2').value || '',
+    criadoEm: new Date().toISOString()
+  };
+  const senha = prompt('Digite a senha de autorização para salvar:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta. Operação cancelada.'); return; }
+  try {
+    if (useFirestore && db) {
+      await addToFirestore(novo);
+    } else {
+      novo.id = String(Date.now());
+      equipmentData.push(novo);
+      persistLocal();
+      renderEquipment(applyCurrentFilterArray());
+    }
+    closeModal(addModal);
+    showNotification('Equipamento adicionado com sucesso!');
+  } catch(err){
+    console.error(err);
+    showNotification('Erro ao salvar. Veja console.','error');
+  }
+});
+
+// Edit
+function openEditModal(id) {
+  const eq = equipmentData.find(x=>x.id===id);
+  if (!eq) return alert('Equipamento não encontrado');
+  document.getElementById('editId').value = eq.id;
+  document.getElementById('editPrefixoMolde').value = eq.prefixoMolde || '';
+  document.getElementById('editMoldeAlmox').value = eq.moldeAlmox || '';
+  document.getElementById('editPrefixoBlank').value = eq.prefixoBlank || '';
+  document.getElementById('editBlankAlmox').value = eq.blankAlmox || '';
+  document.getElementById('editProcesso').value = eq.processo || '';
+  document.getElementById('editClasse').value = eq.classe || '';
+  document.getElementById('editNeckrings').value = eq.neckrings || '';
+  document.getElementById('editAneisGuias').value = eq.aneisGuias || '';
+  document.getElementById('editThimble').value = eq.thimble || '';
+  document.getElementById('editMachos').value = eq.machos || '';
+  document.getElementById('editCoolers').value = eq.coolers || '';
+  document.getElementById('editBaffles').value = eq.baffles || '';
+  document.getElementById('editBafflesPlugs').value = eq.bafflesPlugs || '';
+  document.getElementById('editFunis').value = eq.funis || '';
+  document.getElementById('editFundos').value = eq.fundos || '';
+  document.getElementById('editFundosPlugs').value = eq.fundosPlugs || '';
+  document.getElementById('editSopradores').value = eq.sopradores || '';
+  document.getElementById('editPincas').value = eq.pincas || '';
+  document.getElementById('editCorredor').value = eq.corredor || '';
+  document.getElementById('editPrateleira').value = eq.prateleira || '';
+  document.getElementById('editObservacoesTopo').value = eq.observacoesTopo || '';
+  document.getElementById('editPolimentoMolde').value = eq.polimentoMolde || '';
+  document.getElementById('editPolimentoBlank').value = eq.polimentoBlank || '';
+  document.getElementById('editObservacaoAjustagem').value = eq.observacaoAjustagem || '';
+  document.getElementById('editCausasTroca').value = eq.causasTroca || '';
+  document.getElementById('editDiametroGargalo').value = eq.diametroGargalo || '';
+  document.getElementById('editDiametroCorpo').value = eq.diametroCorpo || '';
+  document.getElementById('editObservacoesAdicionais').value = eq.observacoesAdicionais || '';
+  document.getElementById('editStatus').value = eq.status || 'production';
+  document.getElementById('editUrlImg1').value = eq.urlImg1 || '';
+  document.getElementById('editUrlImg2').value = eq.urlImg2 || '';
+  openModal(editModal);
+}
+editForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const senha = prompt('Digite a senha de autorização para salvar alterações:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta. Operação cancelada.'); return; }
+
+  const id = document.getElementById('editId').value;
+  const payload = {
+    prefixoMolde: document.getElementById('editPrefixoMolde').value || '',
+    moldeAlmox: document.getElementById('editMoldeAlmox').value || '',
+    prefixoBlank: document.getElementById('editPrefixoBlank').value || '',
+    blankAlmox: document.getElementById('editBlankAlmox').value || '',
+    processo: document.getElementById('editProcesso').value || '',
+    classe: document.getElementById('editClasse').value || '',
+    neckrings: document.getElementById('editNeckrings').value || '',
+    aneisGuias: document.getElementById('editAneisGuias').value || '',
+    thimble: document.getElementById('editThimble').value || '',
+    machos: document.getElementById('editMachos').value || '',
+    coolers: document.getElementById('editCoolers').value || '',
+    baffles: document.getElementById('editBaffles').value || '',
+    bafflesPlugs: document.getElementById('editBafflesPlugs').value || '',
+    funis: document.getElementById('editFunis').value || '',
+    fundos: document.getElementById('editFundos').value || '',
+    fundosPlugs: document.getElementById('editFundosPlugs').value || '',
+    sopradores: document.getElementById('editSopradores').value || '',
+    pincas: document.getElementById('editPincas').value || '',
+    corredor: document.getElementById('editCorredor').value || '',
+    prateleira: document.getElementById('editPrateleira').value || '',
+    observacoesTopo: document.getElementById('editObservacoesTopo').value || '',
+    polimentoMolde: document.getElementById('editPolimentoMolde').value || '',
+    polimentoBlank: document.getElementById('editPolimentoBlank').value || '',
+    observacaoAjustagem: document.getElementById('editObservacaoAjustagem').value || '',
+    causasTroca: document.getElementById('editCausasTroca').value || '',
+    diametroGargalo: Number(document.getElementById('editDiametroGargalo').value) || 0,
+    diametroCorpo: Number(document.getElementById('editDiametroCorpo').value) || 0,
+    observacoesAdicionais: document.getElementById('editObservacoesAdicionais').value || '',
+    status: document.getElementById('editStatus').value || 'production',
+    urlImg1: document.getElementById('editUrlImg1').value || '',
+    urlImg2: document.getElementById('editUrlImg2').value || ''
+  };
+  try {
+    if (useFirestore && db) {
+      await updateFirestore(id, payload);
+    } else {
+      const idx = equipmentData.findIndex(x=>x.id===id);
+      if (idx === -1) return alert('ID não encontrado');
+      equipmentData[idx] = Object.assign({}, equipmentData[idx], payload);
+      persistLocal();
+      renderEquipment(applyCurrentFilterArray());
+    }
+    closeModal(editModal);
+    showNotification('Alterações salvas.');
+  } catch(err){
+    console.error(err);
+    showNotification('Erro ao salvar. Veja console.','error');
+  }
+});
+
+
+// Image preview logic
+const imageModal = document.getElementById('imageModal');
+const imageModalImg = document.getElementById('imageModalImg');
+document.addEventListener('click',(e)=>{
+  if(e.target.classList.contains('equipment-image')){
+    imageModalImg.src = e.target.src;
+    imageModal.classList.add('show');
+  } else if(e.target === imageModal){
+    imageModal.classList.remove('show');
+    imageModalImg.src = '';
+  }
+});
+
+// Firestore functions & init
+async function initFirestoreWithConfig(cfg) {
+  try {
+    const [{ initializeApp }, firestoreModule] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js')
+    ]);
+    const { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, updateDoc } = firestoreModule;
+    const app = initializeApp(cfg);
+    db = getFirestore(app);
+    useFirestore = true;
+    const colRef = collection(db, 'equipments_v1');
+    if (typeof onSnapshot === 'function') {
+      if (unsubSnapshot) unsubSnapshot();
+      unsubSnapshot = onSnapshot(colRef, (snapshot)=>{
+        equipmentData = [];
+        snapshot.forEach(snap => {
+          equipmentData.push(Object.assign({id: snap.id}, snap.data()));
+        });
+        equipmentData.sort((a,b)=> (b.criadoEm || '') > (a.criadoEm || '') ? 1 : -1);
+        renderEquipment(applyCurrentFilterArray());
+      }, (err)=> {
+        console.error('onSnapshot error', err);
+        showNotification('Erro na sincronização com Firestore. Veja console.','error');
+      });
+    }
+    showNotification('Conectado ao Firestore com sucesso!');
+  } catch(err){
+    console.error('initFirestore error', err);
+    showNotification('Falha ao conectar Firestore. Usando fallback local.', 'error');
+    useFirestore = false;
+    db = null;
+    loadLocal();
+    renderEquipment(applyCurrentFilterArray());
+  }
+}
+
+async function addToFirestore(obj) {
+  const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+  const { collection, addDoc } = firestoreModule;
+  const colRef = collection(db, 'equipments_v1');
+  const res = await addDoc(colRef, obj);
+  return res.id;
+}
+async function updateFirestore(id, payload) {
+  const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+  const { doc, setDoc } = firestoreModule;
+  const docRef = doc(db, 'equipments_v1', id);
+  await setDoc(docRef, payload, { merge: true });
+}
+async function deleteFromFirestore(id) {
+  const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+  const { doc, deleteDoc } = firestoreModule;
+  const docRef = doc(db, 'equipments_v1', id);
+  await deleteDoc(docRef);
+}
+
+
+// === Tabs Control ===
+const tabEquip = document.getElementById('tabEquip');
+const tabVideos = document.getElementById('tabVideos');
+const tabContentEquip = document.getElementById('tabContentEquip');
+const tabContentVideos = document.getElementById('tabContentVideos');
+
+tabEquip.addEventListener('click', ()=>{
+  tabEquip.classList.add('active'); tabVideos.classList.remove('active');
+  tabContentEquip.classList.add('active'); tabContentVideos.classList.remove('active');
+});
+tabVideos.addEventListener('click', ()=>{
+  tabVideos.classList.add('active'); tabEquip.classList.remove('active');
+  tabContentVideos.classList.add('active'); tabContentEquip.classList.remove('active');
+});
+
+// Botão Video Aula no topo -> abre aba de vídeos
+const videoAulaButton = document.getElementById('videoAulaButton');
+if(videoAulaButton){
+  videoAulaButton.addEventListener('click', ()=>{
+    tabVideos.click();
+    document.getElementById('videoSearch').focus();
+  });
+}
+
+// === Videos Logic ===
+const videoGrid = document.getElementById('videoGrid');
+const videoSearch = document.getElementById('videoSearch');
+const addVideoBtn = document.getElementById('addVideoBtn');
+let videoData = [];
+const STORAGE_KEY_VIDEOS = 'videos_v1';
+
+function persistVideosLocal(){
+  localStorage.setItem(STORAGE_KEY_VIDEOS, JSON.stringify(videoData));
+}
+function loadVideosLocal(){
+  const raw = localStorage.getItem(STORAGE_KEY_VIDEOS);
+  if(raw){
+    try{ videoData = JSON.parse(raw);} catch(e){ videoData=[]; }
+  } else videoData = [];
+}
+
+function renderVideos(list){
+  videoGrid.innerHTML = '';
+  if(!list || list.length===0){
+    videoGrid.innerHTML = '<div style="grid-column:1/-1;padding:20px;background:#fff;border-radius:12px;text-align:center">Nenhum vídeo encontrado.</div>';
+    return;
+  }
+  list.forEach(v=>{
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    card.innerHTML = `
+      <h3>${v.titulo}</h3>
+      <iframe src="${v.url}" allowfullscreen></iframe>
+      <p>${v.descricao}</p>
+    `;
+    videoGrid.appendChild(card);
+  });
+}
+
+// Busca dinâmica
+videoSearch.addEventListener('input', ()=>{
+  const term = videoSearch.value.toLowerCase();
+  const filtered = videoData.filter(v => 
+    v.titulo.toLowerCase().includes(term) || v.descricao.toLowerCase().includes(term)
+  );
+  renderVideos(filtered);
+});
+
+// Adicionar novo vídeo (com senha)
+addVideoBtn.addEventListener('click', async ()=>{
+  const senha = prompt('Digite a senha de autorização para adicionar vídeo:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta. Operação cancelada.'); return; }
+  const titulo = document.getElementById('videoTitulo').value.trim();
+  const descricao = document.getElementById('videoDescricao').value.trim();
+  const url = document.getElementById('videoUrl').value.trim();
+  if(!titulo || !url){ alert('Título e URL são obrigatórios'); return; }
+  const novo = {titulo, descricao, url, criadoEm: new Date().toISOString()};
+  try{
+    if(useFirestore && db){
+      const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+      const { collection, addDoc } = firestoreModule;
+      const colRef = collection(db,'videos_v1');
+      const res = await addDoc(colRef, novo);
+      novo.id = res.id;
+    } else {
+      novo.id = String(Date.now());
+      videoData.push(novo);
+      persistVideosLocal();
+    }
+    renderVideos(videoData);
+    alert('Vídeo adicionado com sucesso!');
+    document.getElementById('videoTitulo').value='';
+    document.getElementById('videoDescricao').value='';
+    document.getElementById('videoUrl').value='';
+  }catch(err){
+    console.error(err);
+    alert('Erro ao salvar vídeo');
+  }
+});
+
+// Firestore sync de vídeos
+async function initFirestoreVideos(){
+  try{
+    const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+    const { collection, onSnapshot } = firestoreModule;
+    const colRef = collection(db,'videos_v1');
+    if(typeof onSnapshot==='function'){
+      onSnapshot(colRef,(snapshot)=>{
+        videoData=[];
+        snapshot.forEach(snap=>{
+          videoData.push(Object.assign({id:snap.id},snap.data()));
+        });
+        videoData.sort((a,b)=>(b.criadoEm||'')>(a.criadoEm||'')?1:-1);
+        renderVideos(videoData);
+      });
+    }
+  }catch(err){
+    console.error('initFirestoreVideos error',err);
+    loadVideosLocal();
+    renderVideos(videoData);
+  }
+}
+initFirestoreVideos();
+
+// Defects modal logic
+defectsButton.addEventListener('click', ()=> openModal(defectsModal));
+defectSelect.addEventListener('change', ()=>{
+  if (!defectSelect.value) { defectInfo.style.display='none'; defectText.value=''; return; }
+  defectInfo.style.display='block';
+  if (defectSelect.value==='H+') defectText.value = 'Causa: choque térmico ou impacto.\nSolução: substituir a peça ou aplicar solda especializada e inspecionar procedimento de produção.';
+  if (defectSelect.value==='H-') defectText.value = 'Causa: uso prolongado e atrito.\nSolução: polimento, ajuste de tolerâncias e substituição conforme ciclo de vida.';(defectSelect.value==='desgaste')
+  if (defectSelect.value==='C+') defectText.value = 'Causa: exposição à umidade/ambiente corrosivo.\nSolução: limpeza, tratamento e proteção com óleo ou revestimento.';
+  if (defectSelect.value==='C-') defectText.value = 'Causa: exposição à umidade/ambiente corrosivo.\nSolução: limpeza, tratamento e proteção com óleo ou revestimento.';
+});
+
+// Auto-init Firestore with embedded config
+initFirestoreWithConfig(firebaseConfig);
+
+// Init fallback
+(function init(){
+  if (!useFirestore) {
+    loadLocal();
+    applyLanguage('pt');
+    renderEquipment(applyCurrentFilterArray());
+  } else {
+    applyLanguage('pt');
+  }
+})();
+</script>
+
+  <!-- Image Preview Modal -->
+  <div id="imageModal" class="image-modal">
+    <img id="imageModalImg" src="" alt="Preview">
+  </div>
+
+
+  <!-- Modal Editar Vídeo -->
+  <div class="modal" id="editVideoModal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" style="max-width:600px">
+      <div class="modal-header">
+        <h3><i class="fas fa-edit"></i> Editar Vídeo</h3>
+        <button class="close-button" data-close="editVideoModal">&times;</button>
+      </div>
+      <form id="editVideoForm">
+        <input type="hidden" id="editVideoIndex" />
+        <div class="form-group">
+          <label class="form-label" for="editVideoTitulo">Título</label>
+          <input id="editVideoTitulo" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editVideoDescricao">Descrição</label>
+          <textarea id="editVideoDescricao" class="form-textarea"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editVideoUrl">URL do Vídeo (embed YouTube)</label>
+          <input id="editVideoUrl"
+        
+        <label for="editVideoThumbnail">Thumbnail (URL da Imagem)</label>
+        <input id="editVideoThumbnail" placeholder="https://.../thumb.jpg">
+ class="form-input" placeholder="https://www.youtube.com/embed/XXXX" />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-button" data-close="editVideoModal">Cancelar</button>
+          <button type="submit" class="save-button">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+// =============================
+// VIDEO AULAS - LOCAL STORAGE
+// =============================
+const VIDEO_KEY = 'video_list_v1';
+let videoData = [];
+
+function persistVideos() {
+  localStorage.setItem(VIDEO_KEY, JSON.stringify(videoData));
+}
+function loadVideos() {
+  const raw = localStorage.getItem(VIDEO_KEY);
+  if (raw) {
+    try { videoData = JSON.parse(raw); } catch(e){ videoData = []; }
+  } else videoData = [];
+}
+function renderVideos() {
+  const grid = document.getElementById('videoGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!videoData.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;background:#fff;padding:20px;border-radius:12px;text-align:center">Nenhum vídeo encontrado.</div>';
+    return;
+  }
+  videoData.forEach((v, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    card.innerHTML = `
+      <h3>${v.titulo}</h3>
+      <iframe src="${v.url}" allowfullscreen></iframe>
+      <p>${v.descricao}</p>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button style="flex:1;background:#3498db;color:#fff;border:none;border-radius:8px;padding:8px;cursor:pointer" onclick="openEditVideoModal(${idx})"><i class="fas fa-edit"></i> Editar</button>
+        <button style="flex:1;background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:8px;cursor:pointer" onclick="deleteVideo(${idx})"><i class="fas fa-trash"></i> Remover</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+function addVideo(titulo, descricao, url) {
+  videoData.push({titulo, descricao, url});
+  persistVideos();
+  renderVideos();
+}
+function deleteVideo(idx) {
+  const senha = prompt('Digite a senha para remover o vídeo:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta.'); return; }
+  if (!confirm('Deseja realmente remover este vídeo?')) return;
+  videoData.splice(idx,1);
+  persistVideos();
+  renderVideos();
+}
+
+// Modal de edição
+const editVideoModal = document.getElementById('editVideoModal');
+const editVideoForm = document.getElementById('editVideoForm');
+function openEditVideoModal(idx) {
+  const senha = prompt('Digite a senha para editar o vídeo:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta.'); return; }
+  const v = videoData[idx];
+  document.getElementById('editVideoIndex').value = idx;
+  document.getElementById('editVideoTitulo').value = v.titulo;
+  document.getElementById('editVideoDescricao').value = v.descricao;
+  document.getElementById('editVideoUrl').value = v.url;
+  openModal(editVideoModal);
+}
+editVideoForm.addEventListener('submit',(e)=>{
+  e.preventDefault();
+  const idx = document.getElementById('editVideoIndex').value;
+  videoData[idx] = {
+    titulo: document.getElementById('editVideoTitulo').value.trim(),
+    descricao: document.getElementById('editVideoDescricao').value.trim(),
+    url: document.getElementById('editVideoUrl').value.trim()
+  };
+  persistVideos();
+  renderVideos();
+  closeModal(editVideoModal);
+});
+
+// Eventos do formulário de adicionar
+document.getElementById('addVideoBtn').addEventListener('click', ()=>{
+  const titulo = document.getElementById('videoTitulo').value.trim();
+  const descricao = document.getElementById('videoDescricao').value.trim();
+  const url = document.getElementById('videoUrl').value.trim();
+  if (!titulo || !url) { alert('Preencha título e URL!'); return; }
+  const senha = prompt('Digite a senha para adicionar o vídeo:');
+  if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()) { alert('Senha incorreta.'); return; }
+  addVideo(titulo, descricao, url);
+  document.getElementById('videoTitulo').value = '';
+  document.getElementById('videoDescricao').value = '';
+  document.getElementById('videoUrl').value = '';
+});
+
+// Filtro de busca
+document.getElementById('videoSearch').addEventListener('input', (e)=>{
+  const term = e.target.value.toLowerCase();
+  const grid = document.getElementById('videoGrid');
+  grid.querySelectorAll('.video-card').forEach(card=>{
+    const text = card.innerText.toLowerCase();
+    card.style.display = text.includes(term) ? '' : 'none';
+  });
+});
+
+// Inicializar vídeos sem atrapalhar equipamentos
+loadVideos();
+renderVideos();
+
+// Controle das abas
+const tabEquip = document.getElementById('tabEquip');
+const tabVideos = document.getElementById('tabVideos');
+const tabContentEquip = document.getElementById('tabContentEquip');
+const tabContentVideos = document.getElementById('tabContentVideos');
+
+tabEquip.addEventListener('click', ()=>{
+  tabEquip.classList.add('active');
+  tabVideos.classList.remove('active');
+  tabContentEquip.classList.add('active');
+  tabContentVideos.classList.remove('active');
+});
+tabVideos.addEventListener('click', ()=>{
+  tabVideos.classList.add('active');
+  tabEquip.classList.remove('active');
+  tabContentVideos.classList.add('active');
+  tabContentEquip.classList.remove('active');
+});
+</script>
+
+<script>
+(function(){
+  try{
+    var oldKey = 'videos_v1';
+    var newKey = 'video_list_v1';
+    var oldRaw = localStorage.getItem(oldKey);
+    var newRaw = localStorage.getItem(newKey);
+    var oldArr = oldRaw ? JSON.parse(oldRaw) : [];
+    var newArr = newRaw ? JSON.parse(newRaw) : [];
+    var map = {};
+    newArr.forEach(v => { map[v.id || (v.titulo+'|'+v.url)] = v; });
+    oldArr.forEach(v => { map[v.id || (v.titulo+'|'+v.url)] = v; });
+    var merged = Object.values(map);
+    if(merged.length > 0){
+      localStorage.setItem(newKey, JSON.stringify(merged));
+      window.videoData = merged;
+    }
+  }catch(e){ console.error('Erro migração vídeos', e); }
+})();
+</script>
+
+<script>
+(function(){
+  // Normaliza URLs do YouTube para embed
+  function toEmbedUrl(raw){
+    if(!raw) return raw;
+    try{
+      var u = raw.trim();
+      var patterns = [
+        /youtu\.be\/([A-Za-z0-9_-]{11})/,
+        /youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})/,
+        /youtube\.com\/embed\/([A-Za-z0-9_-]{11})/,
+        /m\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})/,
+        /youtube\.com\/v\/([A-Za-z0-9_-]{11})/
+      ];
+      for(var i=0;i<patterns.length;i++){
+        var m = u.match(patterns[i]);
+        if(m && m[1]) return 'https://www.youtube.com/embed/' + m[1];
+      }
+      var q = (u.split('?')[1]||'');
+      var params = new URLSearchParams(q);
+      if(params.has('v')) {
+        var id = params.get('v');
+        if(id) return 'https://www.youtube.com/embed/' + id;
+      }
+    }catch(e){}
+    return raw;
+  }
+
+  function safeTrim(s){ return String(s||'').trim(); }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('addVideoBtn');
+    if(!btn) return;
+    btn.type = 'button'; // evita submit duplicado
+
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+
+      var tituloEl = document.getElementById('videoTitulo');
+      var descEl = document.getElementById('videoDescricao');
+      var urlEl = document.getElementById('videoUrl');
+      var titulo = tituloEl ? safeTrim(tituloEl.value) : '';
+      var descricao = descEl ? safeTrim(descEl.value) : '';
+      var rawUrl = urlEl ? safeTrim(urlEl.value) : '';
+      if(!titulo || !rawUrl){ alert('Preencha título e URL!'); return; }
+      var embed = toEmbedUrl(rawUrl);
+
+      var senha = prompt('Digite a senha para adicionar o vídeo:');
+      if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()){
+        alert('Senha incorreta.'); return;
+      }
+
+      try{
+        if(typeof addVideo === 'function'){
+          addVideo(titulo, descricao, embed);
+        } else {
+          window.videoData = window.videoData || [];
+          var novo = {
+            titulo: titulo, descricao: descricao, url: embed,
+            id: String(Date.now()), criadoEm: new Date().toISOString()
+          };
+          window.videoData.push(novo);
+          try {
+            localStorage.setItem(window.VIDEO_KEY || 'video_list_v1', JSON.stringify(window.videoData));
+          }catch(e){}
+          if(typeof renderVideos === 'function') renderVideos();
+        }
+        if(tituloEl) tituloEl.value='';
+        if(descEl) descEl.value='';
+        if(urlEl) urlEl.value='';
+        alert('Vídeo adicionado com sucesso!');
+      }catch(e){
+        console.error('Erro ao adicionar vídeo', e);
+        alert('Erro ao adicionar vídeo');
+      }
+    }, true);
+  });
+})();
+</script>
+
+<script>
+(function(){
+  // Sobrescreve renderVideos para garantir botões Editar/Excluir em cada vídeo
+  window.renderVideos = function(){
+    try{
+      var grid = document.getElementById('videoGrid');
+      if(!grid) return;
+      grid.innerHTML = '';
+      var videos = window.videoData || [];
+      videos.forEach(function(v, idx){
+        var card = document.createElement('div');
+        card.className = 'video-card';
+        card.innerHTML = `
+          <div class="video-iframe">
+            <iframe src="${v.url}" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <h3>${v.titulo||''}</h3>
+          <p>${v.descricao||''}</p>
+          <div class="video-actions">
+            <button class="video-edit" data-id="${v.id||idx}"><i class="fas fa-edit"></i> Editar</button>
+<button class="video-delete" data-id="${v.id||idx}"><i class="fas fa-trash"></i> Excluir</button>
+          </div>
+        `;
+        // Botão editar
+        card.querySelector('.video-edit').addEventListener('click', function(){
+  var id = this.getAttribute('data-id');
+  openEditVideoModalById(id);
+});
+        // Botão excluir
+        card.querySelector('.video-delete').addEventListener('click', function(){
+  var id = this.getAttribute('data-id');
+  deleteVideoById(id);
+});
+        grid.appendChild(card);
+      });
+    }catch(e){ console.error('renderVideos error', e); }
+  };
+  // Render inicial
+  document.addEventListener('DOMContentLoaded', function(){
+    if(typeof window.renderVideos === 'function') window.renderVideos();
+  });
+})();
+</script>
+
+<!-- ADICIONADO: suporte a <video> com thumbnails -->
+<script>
+(function(){
+  window.renderVideos = function(list){
+    var counterEl = document.getElementById('totalVideos'); if(counterEl) counterEl.textContent = videos.length;
+    try{
+      var grid = document.getElementById('videoGrid');
+      if(!grid) return;
+      var videos = Array.isArray(list) ? list : (window.videoData || []);
+      grid.innerHTML = '';
+      if(!videos.length){
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;background:#fff;border-radius:12px;text-align:center">Nenhum vídeo encontrado.</div>';
+        return;
+      }
+      videos.forEach(function(v){
+        var card = document.createElement('div');
+        card.className = 'video-card';
+        var title = v.titulo || '';
+        var desc = v.descricao || '';
+        var url = v.url || v.videoUrl || '';
+        var thumb = v.thumbnail || 'data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270"><rect width="100%" height="100%" fill="black"/><polygon points="180,90 330,135 180,180" fill="white"/></svg>');
+        var vid = v.id || String(Date.now());
+
+        card.innerHTML = `
+          <h3>${title}</h3>
+          <div class="video-iframe">
+            <video controls playsinline preload="metadata" poster="${thumb}">
+              <source src="${url}" type="video/mp4">
+              Seu navegador não suporta vídeo.
+            </video>
+          </div>
+          <p>${desc}</p>
+          <div class="video-actions">
+            <button class="video-edit" data-id="${vid}"><i class="fas fa-edit"></i> Editar</button>
+            <button class="video-delete" data-id="${vid}"><i class="fas fa-trash"></i> Excluir</button>
+          </div>
+        `;
+        grid.appendChild(card);
+
+        var editBtn = card.querySelector('.video-edit');
+        var delBtn = card.querySelector('.video-delete');
+        if(editBtn){
+          editBtn.addEventListener('click', function(ev){
+            ev.preventDefault();ev.stopPropagation();
+            var id = this.getAttribute('data-id');
+            openEditVideoModalById(id);
+          });
+        }
+        if(delBtn){
+          delBtn.addEventListener('click', function(ev){
+            ev.preventDefault();ev.stopPropagation();
+            var id = this.getAttribute('data-id');
+            deleteVideoById(id);
+          });
+        }
+      });
+    }catch(e){ console.error('renderVideos <video> error', e); }
+  };
+
+  // Ajustar submit do formulário de edição para incluir thumbnail
+  try{
+    var form = document.getElementById('editVideoForm');
+    if(form){
+      var newForm = form.cloneNode(true);
+      form.parentNode.replaceChild(newForm, form);
+      newForm.addEventListener('submit', async function(e){
+        e.preventDefault();
+        var id = document.getElementById('editVideoId').value;
+        var titulo = document.getElementById('editVideoTitulo').value.trim();
+        var descricao = document.getElementById('editVideoDescricao').value.trim();
+        var url = document.getElementById('editVideoUrl').value.trim();
+        var thumb = document.getElementById('editVideoThumbnail').value.trim();
+        if(!titulo || !url){ alert('Preencha título e URL!'); return; }
+        var payload = { titulo: titulo, descricao: descricao, url: url, thumbnail: thumb };
+
+        if(useFirestore && db){
+          try{
+            const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+            const { doc, setDoc } = firestoreModule;
+            const docRef = doc(db, 'videos_v1', id);
+            await setDoc(docRef, payload, { merge: true });
+          }catch(err){ console.error('Firestore save error', err); }
+        }
+        // Atualiza local
+        var idx = (window.videoData||[]).findIndex(x=>String(x.id)===String(id));
+        if(idx!==-1){ window.videoData[idx] = Object.assign({}, window.videoData[idx], payload); }
+        else { window.videoData.push(Object.assign({id:id}, payload)); }
+        try{ localStorage.setItem('video_list_v1', JSON.stringify(window.videoData)); }catch(e){}
+        renderVideos(window.videoData);
+        closeModal(document.getElementById('editVideoModal'));
+      });
+    }
+  }catch(e){ console.error('editVideoForm override error', e); }
+})();
+</script>
+
+
+<!-- INJECTED: compatibility helpers to ensure edit/delete buttons work across render variants -->
+<script>
+(function(){
+  function findVideoIndexById(id){
+    if(!window.videoData || !Array.isArray(window.videoData)) return -1;
+    id = String(id||'').trim();
+    // direct id match
+    var idx = window.videoData.findIndex(v=> String(v.id||'') === id);
+    if(idx !== -1) return idx;
+    // numeric index
+    if(!isNaN(Number(id))){
+      var n = Number(id);
+      if(n>=0 && n < window.videoData.length) return n;
+    }
+    // match titulo|url (legacy merge key)
+    idx = window.videoData.findIndex(v => (v.titulo && v.url) && ((v.titulo+'|'+v.url) === id));
+    if(idx !== -1) return idx;
+    // match by url equality
+    idx = window.videoData.findIndex(v=> String(v.url||'') === id);
+    if(idx !== -1) return idx;
+    // partial match on url or title as last resort
+    idx = window.videoData.findIndex(v=> (String(v.url||'').indexOf(id) !== -1) || (String(v.titulo||'').indexOf(id) !== -1));
+    return idx;
+  }
+
+  // delete by id wrapper
+  window.deleteVideoById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ alert('Vídeo não encontrado.'); return; }
+      if(typeof deleteVideo === 'function'){
+        deleteVideo(idx);
+        return;
+      }
+      // fallback inline delete
+      var senha = prompt('Digite a senha para excluir o vídeo:');
+      if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta.'); return; }
+      if(!confirm('Deseja realmente excluir este vídeo?')) return;
+      window.videoData.splice(idx,1);
+      try{ localStorage.setItem(window.VIDEO_KEY || 'video_list_v1', JSON.stringify(window.videoData)); }catch(e){}
+      if(typeof renderVideos === 'function') renderVideos(window.videoData);
+    }catch(e){ console.error('deleteVideoById error', e); alert('Erro ao excluir vídeo (veja console).'); }
+  };
+
+  // open edit modal by id wrapper
+  window.openEditVideoModalById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ alert('Vídeo não encontrado.'); return; }
+      if(typeof openEditVideoModal === 'function'){
+        openEditVideoModal(idx);
+        return;
+      }
+      // fallback: populate modal fields and open if modal helpers exist
+      var v = window.videoData[idx];
+      if(!v) { alert('Vídeo não encontrado.'); return; }
+      if(document.getElementById('editVideoIndex')) document.getElementById('editVideoIndex').value = idx;
+      if(document.getElementById('editVideoTitulo')) document.getElementById('editVideoTitulo').value = v.titulo || '';
+      if(document.getElementById('editVideoDescricao')) document.getElementById('editVideoDescricao').value = v.descricao || '';
+      if(document.getElementById('editVideoUrl')) document.getElementById('editVideoUrl').value = v.url || '';
+      if(typeof openModal === 'function' && document.getElementById('editVideoModal')) openModal(document.getElementById('editVideoModal'));
+    }catch(e){ console.error('openEditVideoModalById error', e); alert('Erro ao abrir modal de edição (veja console).'); }
+  };
+})();
+</script>
+<!-- END INJECTED -->
+
+
+<!-- INJECTED: enforce unique video titles -->
+<script>
+(function(){
+  function tituloJaExiste(titulo, ignoreIndex){
+    if(!window.videoData) return false;
+    titulo = String(titulo||'').trim().toLowerCase();
+    return window.videoData.some(function(v, idx){
+      if(ignoreIndex !== undefined && idx === ignoreIndex) return false;
+      return String(v.titulo||'').trim().toLowerCase() === titulo;
+    });
+  }
+
+  // Hook de adicionar vídeo
+  if(typeof window.addVideo === 'function'){
+    const originalAdd = window.addVideo;
+    window.addVideo = function(){
+      try{
+        var tituloField = document.getElementById('videoTitulo');
+        var titulo = tituloField ? tituloField.value : '';
+        if(tituloJaExiste(titulo)){
+          alert('Já existe um vídeo com este título. Escolha um título único.');
+          return;
+        }
+      }catch(e){ console.error('Erro verificação título addVideo', e); }
+      return originalAdd.apply(this, arguments);
+    };
+  }
+
+  // Hook de salvar edição
+  if(typeof window.saveEditedVideo === 'function'){
+    const originalSave = window.saveEditedVideo;
+    window.saveEditedVideo = function(){
+      try{
+        var tituloField = document.getElementById('editVideoTitulo');
+        var titulo = tituloField ? tituloField.value : '';
+        var idxField = document.getElementById('editVideoIndex');
+        var idx = idxField ? parseInt(idxField.value,10) : undefined;
+        if(tituloJaExiste(titulo, idx)){
+          alert('Já existe um vídeo com este título. Escolha um título único.');
+          return;
+        }
+      }catch(e){ console.error('Erro verificação título saveEditedVideo', e); }
+      return originalSave.apply(this, arguments);
+    };
+  }
+})();
+</script>
+<!-- END INJECTED -->
+
+
+<!-- INJECTED FIX v2: robust delete/edit by dataset-index -->
+<script>
+(function(){
+  function findVideoIndexById(id){
+    if(!window.videoData || !Array.isArray(window.videoData)) return -1;
+    id = String(id||'').trim();
+    // Se id é número simples (dataset-index)
+    if(/^\d+$/.test(id)){
+      var n = parseInt(id,10);
+      if(n>=0 && n < window.videoData.length) return n;
+    }
+    // procurar por id no objeto
+    var idx = window.videoData.findIndex(v=> String(v.id||'') === id);
+    if(idx !== -1) return idx;
+    // procurar por titulo|url
+    idx = window.videoData.findIndex(v => (v.titulo && v.url) && ((v.titulo+'|'+v.url) === id));
+    if(idx !== -1) return idx;
+    // procurar por url exata
+    idx = window.videoData.findIndex(v=> String(v.url||'') === id);
+    if(idx !== -1) return idx;
+    return -1;
+  }
+
+  window.deleteVideoById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ console.warn("ID não encontrado:", id, window.videoData); alert('Vídeo não encontrado.'); return; }
+      if(typeof deleteVideo === 'function'){ deleteVideo(idx); return; }
+      var senha = prompt('Digite a senha para excluir o vídeo:');
+      if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta.'); return; }
+      if(!confirm('Deseja realmente excluir este vídeo?')) return;
+      window.videoData.splice(idx,1);
+      try{ localStorage.setItem(window.VIDEO_KEY || 'video_list_v1', JSON.stringify(window.videoData)); }catch(e){}
+      if(typeof renderVideos === 'function') renderVideos(window.videoData);
+    }catch(e){ console.error('deleteVideoById error', e); alert('Erro ao excluir vídeo (veja console).'); }
+  };
+
+  window.openEditVideoModalById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ console.warn("ID não encontrado:", id, window.videoData); alert('Vídeo não encontrado.'); return; }
+      if(typeof openEditVideoModal === 'function'){ openEditVideoModal(idx); return; }
+      var v = window.videoData[idx];
+      if(!v) return;
+      if(document.getElementById('editVideoIndex')) document.getElementById('editVideoIndex').value = idx;
+      if(document.getElementById('editVideoTitulo')) document.getElementById('editVideoTitulo').value = v.titulo || '';
+      if(document.getElementById('editVideoDescricao')) document.getElementById('editVideoDescricao').value = v.descricao || '';
+      if(document.getElementById('editVideoUrl')) document.getElementById('editVideoUrl').value = v.url || '';
+      if(typeof openModal === 'function' && document.getElementById('editVideoModal')) openModal(document.getElementById('editVideoModal'));
+    }catch(e){ console.error('openEditVideoModalById error', e); alert('Erro ao abrir modal de edição (veja console).'); }
+  };
+})();
+</script>
+<!-- END INJECTED FIX v2 -->
+
+
+<!-- INJECTED FIX v3: ids únicos, edição funcional, modal fechar -->
+<script>
+(function(){
+  // garantir ids únicos para todos os vídeos
+  function ensureIds(){
+  if(!Array.isArray(window.videoData)) window.videoData = [];
+  let changed = false;
+  window.videoData.forEach(function(v,i){
+    if(!v.id){
+      v.id = 'vid_'+i+'_'+Date.now();
+      changed = true;
+    }
+  });
+  if(changed) persistVideos();
+}
+    });
+  }
+
+  ensureIds();
+
+  // salvar alterações da edição
+  window.saveEditedVideo = function(){
+    try{
+      var idx = parseInt(document.getElementById('editVideoIndex').value,10);
+      if(isNaN(idx) || idx<0 || idx>=window.videoData.length){ alert('Índice inválido'); return; }
+
+      var titulo = document.getElementById('editVideoTitulo').value.trim();
+      var descricao = document.getElementById('editVideoDescricao').value.trim();
+      var url = document.getElementById('editVideoUrl').value.trim();
+
+      if(!titulo){ alert("Título não pode ser vazio"); return; }
+      // validar título único
+      var dup = window.videoData.findIndex((v, i)=> v.titulo.toLowerCase()===titulo.toLowerCase() && i!==idx);
+      if(dup !== -1){ alert("Já existe um vídeo com esse título"); return; }
+
+      window.videoData[idx].titulo = titulo;
+      window.videoData[idx].descricao = descricao;
+      window.videoData[idx].url = url;
+
+      try{ localStorage.setItem(window.VIDEO_KEY || 'video_list_v1', JSON.stringify(window.videoData)); }catch(e){}
+
+      if(typeof renderVideos === 'function') renderVideos(window.videoData);
+      closeEditModal();
+    }catch(e){ console.error("Erro salvar edição", e); alert("Erro ao salvar edição"); }
+  };
+
+  // fechar modal edição
+  window.closeEditModal = function(){
+    var modal = document.getElementById('editVideoModal');
+    if(modal){ modal.style.display="none"; }
+  };
+
+  // sobrescrever abrir modal para garantir funcionamento
+  window.openEditVideoModalById = function(id){
+    ensureIds();
+    var idx = -1;
+    if(/^\d+$/.test(String(id))){ idx = parseInt(id,10); }
+    else { idx = window.videoData.findIndex(v=> v.id===id); }
+
+    if(idx === -1){ alert("Vídeo não encontrado"); return; }
+    var v = window.videoData[idx];
+
+    document.getElementById('editVideoIndex').value = idx;
+    document.getElementById('editVideoTitulo').value = v.titulo||"";
+    document.getElementById('editVideoDescricao').value = v.descricao||"";
+    document.getElementById('editVideoUrl').value = v.url||"";
+
+    var modal = document.getElementById('editVideoModal');
+    if(modal){ modal.style.display="block"; }
+  };
+
+  // sobrescrever excluir
+  window.deleteVideoById = function(id){
+    ensureIds();
+    var idx = -1;
+    if(/^\d+$/.test(String(id))){ idx = parseInt(id,10); }
+    else { idx = window.videoData.findIndex(v=> v.id===id); }
+
+    if(idx === -1){ alert("Vídeo não encontrado"); return; }
+
+    var senha = prompt("Digite a senha para excluir o vídeo:");
+    if(String(senha||'').trim() !== String(ADMIN_PASSWORD||'').trim()){ alert("Senha incorreta"); return; }
+    if(!confirm("Deseja realmente excluir este vídeo?")) return;
+
+    window.videoData.splice(idx,1);
+    try{ localStorage.setItem(window.VIDEO_KEY || 'video_list_v1', JSON.stringify(window.videoData)); }catch(e){}
+    if(typeof renderVideos==="function") renderVideos(window.videoData);
+  };
+})();
+</script>
+<!-- END FIX v3 -->
+
+
+<!-- REPLACEMENT VIDEO HANDLERS - OVERRIDE ALL PREVIOUS VARIANTS -->
+<script>
+(function(){
+  // keep existing ADMIN_PASSWORD if set
+  var ADMIN_PASSWORD = window.ADMIN_PASSWORD || window.ADMINPASSWORD || (typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : window.ADMIN_PASSWORD);
+  // local key
+  const VIDEO_KEY = window.VIDEO_KEY || 'video_list_v1';
+  window.videoData = window.videoData || [];
+  // helpers
+  function persistVideos(){ try{ localStorage.setItem(VIDEO_KEY, JSON.stringify(window.videoData)); }catch(e){} }
+  function loadVideos(){ try{ const raw = localStorage.getItem(VIDEO_KEY); window.videoData = raw ? JSON.parse(raw) : (window.videoData||[]); }catch(e){ window.videoData = window.videoData||[]; } }
+  function ensureIds(){
+  if(!Array.isArray(window.videoData)) window.videoData = [];
+  let changed = false;
+  window.videoData.forEach(function(v,i){
+    if(!v.id){
+      v.id = 'vid_'+i+'_'+Date.now();
+      changed = true;
+    }
+  });
+  if(changed) persistVideos();
+}); }
+  function toEmbedUrl(raw){ if(!raw) return raw; try{ var u = String(raw).trim(); var m;
+      m = u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/); if(m && m[1]) return 'https://www.youtube.com/embed/'+m[1];
+      m = u.match(/v=([A-Za-z0-9_-]{11})/); if(m && m[1]) return 'https://www.youtube.com/embed/'+m[1];
+      m = u.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/); if(m && m[1]) return 'https://www.youtube.com/embed/'+m[1];
+    }catch(e){} return raw; }
+
+  function findVideoIndexById(id){
+    if(!Array.isArray(window.videoData)) return -1;
+    id = String(id||'').trim();
+    if(/^\d+$/.test(id)){
+      var n = parseInt(id,10); if(n>=0 && n < window.videoData.length) return n;
+    }
+    var idx = window.videoData.findIndex(v=> String(v.id||'') === id);
+    if(idx !== -1) return idx;
+    idx = window.videoData.findIndex(v=> String(v.url||'').indexOf(id)!==-1 || String(v.titulo||'').indexOf(id)!==-1);
+    return idx;
+  }
+
+  // render function (override)
+  window.renderVideos = function(list){
+    var counterEl = document.getElementById('totalVideos'); if(counterEl) counterEl.textContent = videos.length;
+    try{
+      ensureIds();
+      var grid = document.getElementById('videoGrid');
+      if(!grid) return;
+      var videos = Array.isArray(list) ? list : (window.videoData || []);
+      grid.innerHTML = '';
+      if(!videos.length){
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;background:#fff;border-radius:12px;text-align:center">Nenhum vídeo encontrado.</div>';
+        return;
+      }
+      videos.forEach(function(v, idx){
+        var vid = v.id || String(idx);
+        var title = v.titulo || v.title || '';
+        var desc = v.descricao || v.description || '';
+        var url = v.url || v.videoUrl || '';
+        var thumb = v.thumbnail || v.poster || '';
+        var card = document.createElement('div');
+        card.className = 'video-card';
+        // choose iframe for youtube embeds, else video tag if mp4, else iframe as fallback
+        var mediaHTML = '';
+        var embed = toEmbedUrl(url);
+        if(String(embed).indexOf('youtube.com/embed') !== -1){
+          mediaHTML = '<div class="video-iframe"><iframe src="'+embed+'" frameborder="0" allowfullscreen></iframe></div>';
+        } else if(String(url).match(/\.(mp4|webm|ogg)(\?.*)?$/i)){
+          mediaHTML = '<div class="video-iframe"><video controls playsinline preload="metadata" '+(thumb?('poster="'+thumb+'"'):'')+'><source src="'+url+'"></video></div>';
+        } else {
+          // fallback: try iframe (e.g., vimeo or embed urls)
+          mediaHTML = '<div class="video-iframe"><iframe src="'+url+'" frameborder="0" allowfullscreen></iframe></div>';
+        }
+        card.innerHTML = '\
+          <h3>'+escapeHtml(title)+'</h3>\
+          '+mediaHTML+'\
+          <p>'+escapeHtml(desc)+'</p>\
+          <div class="video-actions">\
+            <button class="video-edit" data-id="'+escapeAttr(vid)+'"><i class="fas fa-edit"></i> Editar</button>\
+            <button class="video-delete" data-id="'+escapeAttr(vid)+'"><i class="fas fa-trash"></i> Excluir</button>\
+          </div>';
+        grid.appendChild(card);
+        // attach listeners
+        var editBtn = card.querySelector('.video-edit');
+        var delBtn = card.querySelector('.video-delete');
+        if(editBtn){
+          editBtn.addEventListener('click', function(ev){
+            ev && ev.preventDefault && ev.preventDefault();
+            ev && ev.stopPropagation && ev.stopPropagation();
+            var id = this.getAttribute('data-id');
+            window.openEditVideoModalById && window.openEditVideoModalById(id);
+          });
+        }
+        if(delBtn){
+          delBtn.addEventListener('click', function(ev){
+            ev && ev.preventDefault && ev.preventDefault();
+            ev && ev.stopPropagation && ev.stopPropagation();
+            var id = this.getAttribute('data-id');
+            window.deleteVideoById && window.deleteVideoById(id);
+          });
+        }
+      });
+    }catch(e){ console.error('renderVideos override error', e); }
+  };
+
+  // security wrapper for delete
+  window.deleteVideoById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ alert('Vídeo não encontrado.'); return; }
+      var senha = prompt('Digite a senha para excluir o vídeo:');
+      if(String(senha||'').trim() !== String(window.ADMIN_PASSWORD||ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta.'); return; }
+      if(!confirm('Deseja realmente excluir este vídeo?')) return;
+      window.videoData.splice(idx,1);
+      persistVideos();
+      window.renderVideos(window.videoData);
+    }catch(e){ console.error('deleteVideoById override error', e); alert('Erro ao excluir vídeo (veja console).'); }
+  };
+
+  window.openEditVideoModalById = function(id){
+    try{
+      var idx = findVideoIndexById(id);
+      if(idx === -1){ alert('Vídeo não encontrado.'); return; }
+      var v = window.videoData[idx];
+      // populate fields
+      var idxEl = document.getElementById('editVideoIndex');
+      var titleEl = document.getElementById('editVideoTitulo');
+      var descEl = document.getElementById('editVideoDescricao');
+      var urlEl = document.getElementById('editVideoUrl');
+      var thumbEl = document.getElementById('editVideoThumbnail');
+      if(idxEl) idxEl.value = idx;
+      if(titleEl) titleEl.value = v.titulo || '';
+      if(descEl) descEl.value = v.descricao || '';
+      if(urlEl) urlEl.value = v.url || '';
+      if(thumbEl) thumbEl.value = v.thumbnail || '';
+      if(typeof openModal === 'function' && document.getElementById('editVideoModal')){
+        openModal(document.getElementById('editVideoModal'));
+      } else {
+        // fallback show
+        var m = document.getElementById('editVideoModal');
+        if(m) m.style.display = 'block';
+      }
+    }catch(e){ console.error('openEditVideoModalById override error', e); alert('Erro ao abrir modal de edição (veja console).'); }
+  };
+
+  window.saveEditedVideo = function(){
+    try{
+      var idx = parseInt((document.getElementById('editVideoIndex')||{value:''}).value,10);
+      if(isNaN(idx) || idx<0 || idx>= (window.videoData||[]).length){ alert('Índice inválido'); return; }
+      var titulo = (document.getElementById('editVideoTitulo')||{value:''}).value.trim();
+      var descricao = (document.getElementById('editVideoDescricao')||{value:''}).value.trim();
+      var url = (document.getElementById('editVideoUrl')||{value:''}).value.trim();
+      var thumb = (document.getElementById('editVideoThumbnail')||{value:''}).value.trim();
+      if(!titulo){ alert('Título não pode ser vazio'); return; }
+      // password check
+      var senha = prompt('Digite a senha para salvar alterações:');
+      if(String(senha||'').trim() !== String(window.ADMIN_PASSWORD||ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta.'); return; }
+      window.videoData[idx].titulo = titulo;
+      window.videoData[idx].descricao = descricao;
+      window.videoData[idx].url = url;
+      window.videoData[idx].thumbnail = thumb;
+      persistVideos();
+      window.renderVideos(window.videoData);
+      // close modal via helper if present
+      if(typeof closeModal === 'function' && document.getElementById('editVideoModal')) closeModal(document.getElementById('editVideoModal'));
+      else { var m = document.getElementById('editVideoModal'); if(m) m.style.display = 'none'; }
+    }catch(e){ console.error('saveEditedVideo override error', e); alert('Erro ao salvar edição (veja console).'); }
+  };
+
+  // replacement addVideo that normalizes embeds
+  window.addVideo = function(titulo, descricao, rawUrl, thumbnail){
+    try{
+      if(!titulo || !rawUrl){ alert('Título e URL são obrigatórios'); return; }
+      var senha = prompt('Digite a senha para adicionar o vídeo:');
+      if(String(senha||'').trim() !== String(window.ADMIN_PASSWORD||ADMIN_PASSWORD||'').trim()){ alert('Senha incorreta.'); return; }
+      var url = toEmbedUrl(rawUrl);
+      var novo = { id: 'vid_'+Date.now(), titulo: titulo, descricao: descricao||'', url: url, thumbnail: thumbnail||'' };
+      window.videoData = window.videoData || [];
+      window.videoData.push(novo);
+      persistVideos();
+      window.renderVideos(window.videoData);
+      // clear form fields if present
+      try{ if(document.getElementById('videoTitulo')) document.getElementById('videoTitulo').value=''; if(document.getElementById('videoDescricao')) document.getElementById('videoDescricao').value=''; if(document.getElementById('videoUrl')) document.getElementById('videoUrl').value=''; if(document.getElementById('videoThumbnail')) document.getElementById('videoThumbnail').value=''; }catch(e){}
+    }catch(e){ console.error('addVideo override error', e); alert('Erro ao adicionar vídeo (veja console).'); }
+  };
+
+  // wire edit form submit (if exists)
+  document.addEventListener('DOMContentLoaded', function(){
+    // attach save handler to edit form to call saveEditedVideo
+    var editForm = document.getElementById('editVideoForm');
+    if(editForm){
+      editForm.addEventListener('submit', function(e){
+        e && e.preventDefault && e.preventDefault();
+        window.saveEditedVideo && window.saveEditedVideo();
+      });
+    }
+    // attach addVideo button if exists and not wired
+    var addBtn = document.getElementById('addVideoBtn');
+    if(addBtn && !addBtn.__wired_by_override){
+      addBtn.type = 'button';
+      addBtn.addEventListener('click', function(ev){
+        ev && ev.preventDefault && ev.preventDefault();
+        var titulo = (document.getElementById('videoTitulo')||{value:''}).value.trim();
+        var descricao = (document.getElementById('videoDescricao')||{value:''}).value.trim();
+        var url = (document.getElementById('videoUrl')||{value:''}).value.trim();
+        var thumb = (document.getElementById('videoThumbnail')||{value:''}).value.trim();
+        if(!titulo || !url){ alert('Preencha título e URL!'); return; }
+        window.addVideo(titulo, descricao, url, thumb);
+      });
+      addBtn.__wired_by_override = true;
+    }
+    // load and render
+    loadVideos();
+    ensureIds();
+    persistVideos();
+    window.renderVideos && window.renderVideos(window.videoData);
+  });
+
+  // small helpers to escape HTML into text nodes to avoid injection when building innerHTML
+  function escapeHtml(s){ if(s===undefined || s===null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeAttr(s){ if(s===undefined || s===null) return ''; return String(s).replace(/"/g,'&quot;').replace(/'/g,"&#39;"); }
+
+})(); // end closure
+</script>
+<!-- END REPLACEMENT VIDEO HANDLERS -->
+
+</body>
+</html>
