@@ -1497,6 +1497,21 @@
           </div>
         </div>
 
+<!-- GRAFITE -->
+<div class="form-row">
+  <div class="form-group">
+    <label class="form-label" for="addGrafite">Grafite</label>
+    <select id="addGrafite" class="form-select">
+      <option value="">Selecione...</option>
+      <option value="Grafite novo">Grafite novo</option>
+      <option value="Grafite antigo">Grafite antigo</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <!-- Campo vazio para manter alinhamento -->
+  </div>
+</div>
+
         <!-- OBSERVAÇÕES TÉCNICAS -->
         <div class="form-row">
           <div class="form-group">
@@ -1797,6 +1812,21 @@
             </select>
           </div>
         </div>
+
+<!-- GRAFITE -->
+<div class="form-row">
+  <div class="form-group">
+    <label class="form-label" for="editGrafite">Grafite</label>
+    <select id="editGrafite" class="form-select">
+      <option value="">Selecione...</option>
+      <option value="Grafite novo">Grafite novo</option>
+      <option value="Grafite antigo">Grafite antigo</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <!-- Campo vazio para manter alinhamento -->
+  </div>
+</div>
 
         <div class="form-row">
           <div class="form-group">
@@ -2567,6 +2597,9 @@
             <div class="equipment-details">- Aneis Guias: ${eq.aneisGuias || '-'}</div>
             <div class="equipment-details">- Almox Molde: ${eq.moldeAlmox || '-'}</div>
             <div class="equipment-details">- Almox Blank: ${eq.blankAlmox || '-'}</div>
+            
+<div class="equipment-details">- Grafite: ${eq.grafite || '-'}</div>  
+
             <div class="equipment-actions">
               <button class="edit-button" data-id="${eq.id}"><i class="fas fa-edit"></i> ${t.editButton}</button>
               <button class="copy-button" data-id="${eq.id}"><i class="fas fa-copy"></i> ${t.copyButton}</button>
@@ -3519,6 +3552,8 @@ Prateleira: ${eq.prateleira || ''}
       document.getElementById('editObservacoesTopo').value = eq.observacoesTopo || '';
       document.getElementById('editPolimentoMolde').value = eq.polimentoMolde || '';
       document.getElementById('editPolimentoBlank').value = eq.polimentoBlank || '';
+      
+document.getElementById('editGrafite').value = eq.grafite || ''; 
       document.getElementById('editObservacaoAjustagem').value = eq.observacaoAjustagem || '';
       document.getElementById('editCausasTroca').value = eq.causasTroca || '';
       document.getElementById('editDiametroGargaloMenos').value = eq.diametroGargaloMenos || '';
@@ -3793,17 +3828,31 @@ Prateleira: ${eq.prateleira || ''}
         observacoesTopo: document.getElementById('addObservacoesTopo').value,
         polimentoMolde: document.getElementById('addPolimentoMolde').value,
         polimentoBlank: document.getElementById('addPolimentoBlank').value,
+        polimentoBlank: document.getElementById('addPolimentoBlank').value,
+        
+        grafite: document.getElementById('addGrafite').value,
+          
         observacaoAjustagem: document.getElementById('addObservacaoAjustagem').value,
+        
         causasTroca: document.getElementById('addCausasTroca').value,
         diametroGargaloMenos: document.getElementById('addDiametroGargaloMenos').value,
+        
         diametroGargaloIdeal: document.getElementById('addDiametroGargaloIdeal').value,
+        
         diametroGargaloMais: document.getElementById('addDiametroGargaloMais').value,
+        
         diametroCorpoMenos: document.getElementById('addDiametroCorpoMenos').value,
+        
         diametroCorpoIdeal: document.getElementById('addDiametroCorpoIdeal').value,
+        
         diametroCorpoMais: document.getElementById('addDiametroCorpoMais').value,
+        
         observacoesAdicionais: document.getElementById('addObservacoesAdicionais').value,
+        
         status: document.getElementById('addStatus').value,
+        
         urlImg1: document.getElementById('addUrlImg1').value,
+        
         urlImg2: document.getElementById('addUrlImg2').value
       };
       
@@ -3859,6 +3908,8 @@ Prateleira: ${eq.prateleira || ''}
         observacoesTopo: document.getElementById('editObservacoesTopo').value,
         polimentoMolde: document.getElementById('editPolimentoMolde').value,
         polimentoBlank: document.getElementById('editPolimentoBlank').value,
+        
+        grafite: document.getElementById('editGrafite').value,  
         observacaoAjustagem: document.getElementById('editObservacaoAjustagem').value,
         causasTroca: document.getElementById('editCausasTroca').value,
         diametroGargaloMenos: document.getElementById('editDiametroGargaloMenos').value,
