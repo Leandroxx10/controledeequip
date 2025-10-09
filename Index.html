@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Sistema de Gerenciamento de Equipamentos - Versão Corrigida</title>
+  <title>Sistema de Gerenciamento de Equipamentos - V 1.0.1</title>
   
   <!-- ===== BIBLIOTECAS EXTERNAS ===== -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
@@ -178,12 +178,12 @@
     }
     
     .defects-button {
-      background: linear-gradient(135deg, #8e44ad, #9b59b6);
+      background: linear-gradient(135deg, #4077ff, #6ab6ff);
       color: #fff;
     }
     
     .voice-search-button {
-      background: linear-gradient(135deg, #e67e22, #d35400);
+      background: linear-gradient(135deg, #2b82ff, #6ab6ff);
       color: #fff;
     }
     
@@ -1077,6 +1077,39 @@
     .dimensional-input {
       text-align: center;
     }
+    
+    /* ===== ESTILOS PARA ATALHOS DE TECLADO ===== */
+.shortcut-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--card-bg);
+    border: 2px solid var(--secondary);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    display: none;
+}
+
+.shortcut-hint.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.shortcut-key {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    margin: 0 2px;
+    font-size: 0.7rem;
+}
+    
   </style>
 </head>
 
@@ -1275,7 +1308,7 @@
 
     <!-- RODAPÉ DO SISTEMA -->
     <footer style="text-align:center;margin-top:18px;color:var(--text-secondary)">
-      Sistema de Gerenciamento de Equipamentos — Versão Corrigida com IA
+      Sistema de Gerenciamento de Equipamentos — Versão 1.0.1
     </footer>
   </div>
 
@@ -2028,6 +2061,13 @@
     <img id="imageModalImg" src="" alt="Preview">
   </div>
 
+<!-- ===== INDICADOR DE ATALHOS ===== -->
+<div id="shortcutHint" class="shortcut-hint">
+  <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">N</span> Novo Equipamento</div>
+  <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">1/2/3</span> Alternar Abas</div>
+  <div><span class="shortcut-key">Esc</span> Fechar Modal</div>
+</div>
+
   <!-- ===== BIBLIOTECAS DO FIREBASE ===== -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -2035,6 +2075,9 @@
   <!-- ===== SCRIPT PRINCIPAL DO SISTEMA ===== -->
   <script>
     // ===================================================================
+    
+    
+    
     // CONFIGURAÇÃO PRINCIPAL DO SISTEMA - CORRIGIDA
     // ===================================================================
     
@@ -2068,13 +2111,15 @@
     
     // ===== VARIÁVEIS DE PAGINAÇÃO =====
     let currentPage = 1; // Página atual
-    const itemsPerPage = 10; // Itens por página
+    const itemsPerPage = 9; // Itens por página
     
     // ===== VARIÁVEIS DE ORDENAÇÃO =====
     let currentSort = 'prefix-asc'; // Ordenação atual
     
     // ===== VARIÁVEIS DE TEMA =====
     let darkMode = false; // Controla modo escuro/claro
+
+
 
     // ===================================================================
     // ELEMENTOS DA INTERFACE - CAPTURA DE TODOS OS ELEMENTOS DOM
@@ -2226,100 +2271,585 @@
     // SISTEMA DE TRADUÇÃO (INTERNACIONALIZAÇÃO)
     // ===================================================================
 
-    // Dicionário de traduções para múltiplos idiomas
-    const translations = {
-      pt: {
-        appTitle: 'Gerenciador de Equipamentos Completo',
-        connected: 'Conectado ao Firestore: <strong>sistema de equipamentos</strong>.',
-        totalEquipmentLabel: 'Total de Equipamentos',
-        totalProductionLabel: 'Em Produção',
-        totalOutLabel: 'Fora de Produção',
-        listTitle: 'Lista de Equipamentos',
-        addNew: 'Novo Equipamento',
-        defects: 'Defeitos',
-        filterAll: 'Todos',
-        filterProduction: 'Em Produção',
-        filterOut: 'Fora de Produção',
-        searchPlaceholder: 'Buscar por prefixo (Molde / Blank)...',
-        searchButton: 'Procurar',
-        addModalTitle: 'Novo Equipamento',
-        editModalTitle: 'Editar Equipamento',
-        saveButton: 'Salvar',
-        cancelButton: 'Cancelar',
-        editButton: 'Editar',
-        deleteButton: 'Excluir',
-        copyButton: 'Copiar',
-        viewButton: 'Visualizar',
-        notificationCopied: 'Dados copiados!'
-      },
-      en: {
-        appTitle: 'Equipment Manager Complete',
-        connected: 'Connected to Firestore: <strong>equipment system</strong>.',
-        totalEquipmentLabel: 'All Equipment',
-        totalProductionLabel: 'In Production',
-        totalOutLabel: 'Out of Production',
-        listTitle: 'Equipment List',
-        addNew: 'New Equipment',
-        defects: 'Defects',
-        filterAll: 'All',
-        filterProduction: 'In Production',
-        filterOut: 'Out of Production',
-        searchPlaceholder: 'Search by prefix (Mold / Blank)...',
-        searchButton: 'Search',
-        addModalTitle: 'New Equipment',
-        editModalTitle: 'Edit Equipment',
-        saveButton: 'Save',
-        cancelButton: 'Cancel',
-        editButton: 'Edit',
-        deleteButton: 'Delete',
-        copyButton: 'Copy',
-        viewButton: 'View',
-        notificationCopied: 'Data copied!'
-      }
-      // Outros idiomas podem ser adicionados aqui seguindo o mesmo padrão
-    };
+   const translations = {
+  pt: {
+    // Cabeçalho e controles
+    appTitle: 'Gerenciador de Equipamentos Completo',
+    connected: 'Conectado ao Firestore: <strong>sistema de equipamentos</strong>.',
+    themeDark: 'Modo Escuro',
+    themeLight: 'Modo Claro',
+    
+    // Dashboard
+    totalEquipmentLabel: 'Total de Equipamentos',
+    totalProductionLabel: 'Em Produção',
+    totalOutLabel: 'Fora de Produção',
+    
+    // Abas
+    tabEquip: 'Equipamentos',
+    tabVideos: 'Video Aulas', 
+    tabContact: 'Contato',
+    
+    // Lista de equipamentos
+    listTitle: 'Lista de Equipamentos',
+    addNew: 'Novo Equipamento',
+    defects: 'Defeitos',
+    filterAll: 'Todos',
+    filterProduction: 'Em Produção',
+    filterOut: 'Fora de Produção',
+    searchPlaceholder: 'Buscar por prefixo (Molde / Blank)...',
+    searchButton: 'Procurar',
+    
+    // Busca por voz
+    voiceSearchTitle: 'Busca por Voz - Procure por Prefixos',
+    voiceSearchDesc: 'Clique no microfone e fale o prefixo do equipamento (ex: "LB-545") para ver suas informações. Diga "fechar informação" para fechar.',
+    voiceButton: 'Voz',
+    listening: 'Ouvindo... Fale o prefixo do equipamento',
+    
+    // Modal equipamentos
+    addModalTitle: 'Novo Equipamento',
+    editModalTitle: 'Editar Equipamento',
+    viewModalTitle: 'Visualizar Equipamento',
+    saveButton: 'Salvar',
+    cancelButton: 'Cancelar',
+    editButton: 'Editar',
+    deleteButton: 'Excluir',
+    copyButton: 'Copiar',
+    viewButton: 'Visualizar',
+    
+    // Modal defeitos
+    defectsModalTitle: 'Defeitos',
+    selectDefect: 'Selecione o defeito',
+    defectInfo: 'Informações',
+    
+    // Vídeos
+    videosTitle: 'Video Aulas',
+    totalVideos: 'Total',
+    videoSearchPlaceholder: 'Buscar vídeos por título ou descrição...',
+    addVideoTitle: 'Adicionar Novo Vídeo',
+    videoTitle: 'Título',
+    videoDescription: 'Descrição',
+    videoUrl: 'URL do Vídeo (YouTube, Vimeo, ou arquivo MP4 do GitHub)',
+    videoThumbnail: 'Thumbnail (URL da Imagem - opcional)',
+    saveVideo: 'Salvar Vídeo',
+    editVideo: 'Editar Vídeo',
+    
+    // Contato
+    contactRole: 'Desenvolvedor & Suporte Técnico',
+    contactPhone: 'Telefone',
+    contactEmail: 'E-mail',
+    contactNote: 'Entre em contato para suporte técnico, dúvidas ou solicitações de melhorias no sistema.',
+    
+    // Notificações
+    notificationCopied: 'Dados copiados!',
+    equipmentAdded: 'Equipamento adicionado com sucesso!',
+    equipmentUpdated: 'Equipamento atualizado com sucesso!',
+    equipmentDeleted: 'Equipamento excluído com sucesso!',
+    videoAdded: 'Vídeo adicionado com sucesso!',
+    videoUpdated: 'Vídeo atualizado com sucesso!',
+    videoDeleted: 'Vídeo excluído com sucesso!',
+    
+    // Paginação
+    pageInfo: 'Página',
+    of: 'de',
+    previous: 'Anterior',
+    next: 'Próxima',
+    
+    // Ordenação
+    sortPrefixAsc: 'Prefixo (A-Z)',
+    sortPrefixDesc: 'Prefixo (Z-A)',
+    sortDateNewest: 'Mais Recentes',
+    sortDateOldest: 'Mais Antigos'
+  },
 
+  en: {
+    // Header and controls
+    appTitle: 'Equipment Manager Complete',
+    connected: 'Connected to Firestore: <strong>equipment system</strong>.',
+    themeDark: 'Dark Mode',
+    themeLight: 'Light Mode',
+    
+    // Dashboard
+    totalEquipmentLabel: 'All Equipment',
+    totalProductionLabel: 'In Production',
+    totalOutLabel: 'Out of Production',
+    
+    // Tabs
+    tabEquip: 'Equipment',
+    tabVideos: 'Video Tutorials',
+    tabContact: 'Contact',
+    
+    // Equipment list
+    listTitle: 'Equipment List',
+    addNew: 'New Equipment',
+    defects: 'Defects',
+    filterAll: 'All',
+    filterProduction: 'In Production',
+    filterOut: 'Out of Production',
+    searchPlaceholder: 'Search by prefix (Mold / Blank)...',
+    searchButton: 'Search',
+    
+    // Voice search
+    voiceSearchTitle: 'Voice Search - Search by Prefixes',
+    voiceSearchDesc: 'Click the microphone and speak the equipment prefix (ex: "LB-545") to see its information. Say "close information" to close.',
+    voiceButton: 'Voice',
+    listening: 'Listening... Speak the equipment prefix',
+    
+    // Equipment modals
+    addModalTitle: 'New Equipment',
+    editModalTitle: 'Edit Equipment',
+    viewModalTitle: 'View Equipment',
+    saveButton: 'Save',
+    cancelButton: 'Cancel',
+    editButton: 'Edit',
+    deleteButton: 'Delete',
+    copyButton: 'Copy',
+    viewButton: 'View',
+    
+    // Defects modal
+    defectsModalTitle: 'Defects',
+    selectDefect: 'Select defect',
+    defectInfo: 'Information',
+    
+    // Videos
+    videosTitle: 'Video Tutorials',
+    totalVideos: 'Total',
+    videoSearchPlaceholder: 'Search videos by title or description...',
+    addVideoTitle: 'Add New Video',
+    videoTitle: 'Title',
+    videoDescription: 'Description',
+    videoUrl: 'Video URL (YouTube, Vimeo, or GitHub MP4 file)',
+    videoThumbnail: 'Thumbnail (Image URL - optional)',
+    saveVideo: 'Save Video',
+    editVideo: 'Edit Video',
+    
+    // Contact
+    contactRole: 'Developer & Technical Support',
+    contactPhone: 'Phone',
+    contactEmail: 'Email',
+    contactNote: 'Contact for technical support, questions or system improvement requests.',
+    
+    // Notifications
+    notificationCopied: 'Data copied!',
+    equipmentAdded: 'Equipment added successfully!',
+    equipmentUpdated: 'Equipment updated successfully!',
+    equipmentDeleted: 'Equipment deleted successfully!',
+    videoAdded: 'Video added successfully!',
+    videoUpdated: 'Video updated successfully!',
+    videoDeleted: 'Video deleted successfully!',
+    
+    // Pagination
+    pageInfo: 'Page',
+    of: 'of',
+    previous: 'Previous',
+    next: 'Next',
+    
+    // Sorting
+    sortPrefixAsc: 'Prefix (A-Z)',
+    sortPrefixDesc: 'Prefix (Z-A)',
+    sortDateNewest: 'Newest',
+    sortDateOldest: 'Oldest'
+  },
+
+  it: {
+    // Intestazione e controlli
+    appTitle: 'Gestione Completa Attrezzatura',
+    connected: 'Connesso a Firestore: <strong>sistema attrezzatura</strong>.',
+    themeDark: 'Modalità Scura',
+    themeLight: 'Modalità Chiara',
+    
+    // Dashboard
+    totalEquipmentLabel: 'Totale Attrezzature',
+    totalProductionLabel: 'In Produzione',
+    totalOutLabel: 'Fuori Produzione',
+    
+    // Schede
+    tabEquip: 'Attrezzature',
+    tabVideos: 'Video Lezioni',
+    tabContact: 'Contatto',
+    
+    // Lista attrezzature
+    listTitle: 'Lista Attrezzature',
+    addNew: 'Nuova Attrezzatura',
+    defects: 'Difetti',
+    filterAll: 'Tutti',
+    filterProduction: 'In Produzione',
+    filterOut: 'Fuori Produzione',
+    searchPlaceholder: 'Cerca per prefisso (Stampo / Blank)...',
+    searchButton: 'Cerca',
+    
+    // Ricerca vocale
+    voiceSearchTitle: 'Ricerca Vocale - Cerca per Prefissi',
+    voiceSearchDesc: 'Clicca il microfono e pronuncia il prefisso dell\'attrezzatura (es: "LB-545") per vedere le sue informazioni. Di "chiudi informazione" per chiudere.',
+    voiceButton: 'Voce',
+    listening: 'Ascoltando... Pronuncia il prefisso dell\'attrezzatura',
+    
+    // Modal attrezzature
+    addModalTitle: 'Nuova Attrezzatura',
+    editModalTitle: 'Modifica Attrezzatura',
+    viewModalTitle: 'Visualizza Attrezzatura',
+    saveButton: 'Salva',
+    cancelButton: 'Annulla',
+    editButton: 'Modifica',
+    deleteButton: 'Elimina',
+    copyButton: 'Copia',
+    viewButton: 'Visualizza',
+    
+    // Modal difetti
+    defectsModalTitle: 'Difetti',
+    selectDefect: 'Seleziona difetto',
+    defectInfo: 'Informazioni',
+    
+    // Video
+    videosTitle: 'Video Lezioni',
+    totalVideos: 'Totale',
+    videoSearchPlaceholder: 'Cerca video per titolo o descrizione...',
+    addVideoTitle: 'Aggiungi Nuovo Video',
+    videoTitle: 'Titolo',
+    videoDescription: 'Descrizione',
+    videoUrl: 'URL Video (YouTube, Vimeo, o file MP4 GitHub)',
+    videoThumbnail: 'Thumbnail (URL Immagine - opzionale)',
+    saveVideo: 'Salva Video',
+    editVideo: 'Modifica Video',
+    
+    // Contatto
+    contactRole: 'Sviluppatore & Supporto Tecnico',
+    contactPhone: 'Telefono',
+    contactEmail: 'Email',
+    contactNote: 'Contatta per supporto tecnico, domande o richieste di miglioramento del sistema.',
+    
+    // Notifiche
+    notificationCopied: 'Dati copiati!',
+    equipmentAdded: 'Attrezzatura aggiunta con successo!',
+    equipmentUpdated: 'Attrezzatura aggiornata con successo!',
+    equipmentDeleted: 'Attrezzatura eliminata con successo!',
+    videoAdded: 'Video aggiunto con successo!',
+    videoUpdated: 'Video aggiornato con successo!',
+    videoDeleted: 'Video eliminato con successo!',
+    
+    // Impaginazione
+    pageInfo: 'Pagina',
+    of: 'di',
+    previous: 'Precedente',
+    next: 'Prossima',
+    
+    // Ordinamento
+    sortPrefixAsc: 'Prefisso (A-Z)',
+    sortPrefixDesc: 'Prefisso (Z-A)',
+    sortDateNewest: 'Più Recenti',
+    sortDateOldest: 'Più Antichi'
+  },
+
+  zh: {
+    // 页眉和控件
+    appTitle: '设备管理系统',
+    connected: '已连接到 Firestore: <strong>设备系统</strong>.',
+    themeDark: '深色模式',
+    themeLight: '浅色模式',
+    
+    // 仪表板
+    totalEquipmentLabel: '设备总数',
+    totalProductionLabel: '生产中',
+    totalOutLabel: '停产中',
+    
+    // 标签页
+    tabEquip: '设备',
+    tabVideos: '视频教程',
+    tabContact: '联系',
+    
+    // 设备列表
+    listTitle: '设备列表',
+    addNew: '新设备',
+    defects: '缺陷',
+    filterAll: '全部',
+    filterProduction: '生产中',
+    filterOut: '停产中',
+    searchPlaceholder: '按前缀搜索（模具/空白）...',
+    searchButton: '搜索',
+    
+    // 语音搜索
+    voiceSearchTitle: '语音搜索 - 按前缀搜索',
+    voiceSearchDesc: '点击麦克风并说出设备前缀（例如："LB-545"）查看其信息。说"关闭信息"来关闭。',
+    voiceButton: '语音',
+    listening: '正在聆听... 请说出设备前缀',
+    
+    // 设备弹窗
+    addModalTitle: '新设备',
+    editModalTitle: '编辑设备',
+    viewModalTitle: '查看设备',
+    saveButton: '保存',
+    cancelButton: '取消',
+    editButton: '编辑',
+    deleteButton: '删除',
+    copyButton: '复制',
+    viewButton: '查看',
+    
+    // 缺陷弹窗
+    defectsModalTitle: '缺陷',
+    selectDefect: '选择缺陷',
+    defectInfo: '信息',
+    
+    // 视频
+    videosTitle: '视频教程',
+    totalVideos: '总计',
+    videoSearchPlaceholder: '按标题或描述搜索视频...',
+    addVideoTitle: '添加新视频',
+    videoTitle: '标题',
+    videoDescription: '描述',
+    videoUrl: '视频URL（YouTube、Vimeo或GitHub MP4文件）',
+    videoThumbnail: '缩略图（图片URL - 可选）',
+    saveVideo: '保存视频',
+    editVideo: '编辑视频',
+    
+    // 联系
+    contactRole: '开发人员 & 技术支持',
+    contactPhone: '电话',
+    contactEmail: '邮箱',
+    contactNote: '联系获取技术支持、问题解答或系统改进请求。',
+    
+    // 通知
+    notificationCopied: '数据已复制！',
+    equipmentAdded: '设备添加成功！',
+    equipmentUpdated: '设备更新成功！',
+    equipmentDeleted: '设备删除成功！',
+    videoAdded: '视频添加成功！',
+    videoUpdated: '视频更新成功！',
+    videoDeleted: '视频删除成功！',
+    
+    // 分页
+    pageInfo: '页面',
+    of: '的',
+    previous: '上一页',
+    next: '下一页',
+    
+    // 排序
+    sortPrefixAsc: '前缀 (A-Z)',
+    sortPrefixDesc: '前缀 (Z-A)',
+    sortDateNewest: '最新',
+    sortDateOldest: '最旧'
+  },
+
+  ja: {
+    // ヘッダーとコントロール
+    appTitle: '設備管理システム',
+    connected: 'Firestoreに接続済み: <strong>設備システム</strong>.',
+    themeDark: 'ダークモード',
+    themeLight: 'ライトモード',
+    
+    // ダッシュボード
+    totalEquipmentLabel: '設備総数',
+    totalProductionLabel: '生産中',
+    totalOutLabel: '生産停止中',
+    
+    // タブ
+    tabEquip: '設備',
+    tabVideos: 'ビデオチュートリアル',
+    tabContact: '連絡先',
+    
+    // 設備リスト
+    listTitle: '設備一覧',
+    addNew: '新規設備',
+    defects: '不具合',
+    filterAll: 'すべて',
+    filterProduction: '生産中',
+    filterOut: '生産停止中',
+    searchPlaceholder: 'プレフィックスで検索（金型/ブランク）...',
+    searchButton: '検索',
+    
+    // 音声検索
+    voiceSearchTitle: '音声検索 - プレフィックスで検索',
+    voiceSearchDesc: 'マイクをクリックして設備のプレフィックス（例："LB-545"）を話すと情報が表示されます。「情報を閉じる」と言って閉じます。',
+    voiceButton: '音声',
+    listening: '聞いています... 設備のプレフィックスを話してください',
+    
+    // 設備モーダル
+    addModalTitle: '新規設備',
+    editModalTitle: '設備編集',
+    viewModalTitle: '設備表示',
+    saveButton: '保存',
+    cancelButton: 'キャンセル',
+    editButton: '編集',
+    deleteButton: '削除',
+    copyButton: 'コピー',
+    viewButton: '表示',
+    
+    // 不具合モーダル
+    defectsModalTitle: '不具合',
+    selectDefect: '不具合を選択',
+    defectInfo: '情報',
+    
+    // ビデオ
+    videosTitle: 'ビデオチュートリアル',
+    totalVideos: '合計',
+    videoSearchPlaceholder: 'タイトルまたは説明でビデオを検索...',
+    addVideoTitle: '新規ビデオ追加',
+    videoTitle: 'タイトル',
+    videoDescription: '説明',
+    videoUrl: 'ビデオURL（YouTube、Vimeo、GitHub MP4ファイル）',
+    videoThumbnail: 'サムネイル（画像URL - 任意）',
+    saveVideo: 'ビデオ保存',
+    editVideo: 'ビデオ編集',
+    
+    // 連絡先
+    contactRole: '開発者 & テクニカルサポート',
+    contactPhone: '電話',
+    contactEmail: 'メール',
+    contactNote: 'テクニカルサポート、質問、システム改善のリクエストはこちらまでご連絡ください。',
+    
+    // 通知
+    notificationCopied: 'データをコピーしました！',
+    equipmentAdded: '設備を正常に追加しました！',
+    equipmentUpdated: '設備を正常に更新しました！',
+    equipmentDeleted: '設備を正常に削除しました！',
+    videoAdded: 'ビデオを正常に追加しました！',
+    videoUpdated: 'ビデオを正常に更新しました！',
+    videoDeleted: 'ビデオを正常に削除しました！',
+    
+    // ページネーション
+    pageInfo: 'ページ',
+    of: 'の',
+    previous: '前へ',
+    next: '次へ',
+    
+    // ソート
+    sortPrefixAsc: 'プレフィックス (A-Z)',
+    sortPrefixDesc: 'プレフィックス (Z-A)',
+    sortDateNewest: '最新',
+    sortDateOldest: '最古'
+  }
+};
     /**
      * APLICA AS TRADUÇÕES PARA O IDIOMA SELECIONADO
      * @param {string} lang - Código do idioma ('pt', 'en', etc.)
      */
     function applyLanguage(lang) {
-      currentLang = lang;
-      const t = translations[lang] || translations.pt; // Fallback para português
-      
-      // Atualiza todos os textos da interface
-      document.getElementById('appTitle').textContent = t.appTitle;
-      document.querySelectorAll('.config-note').forEach(el => el.innerHTML = t.connected);
-      document.getElementById('totalEquipmentLabel').textContent = t.totalEquipmentLabel;
-      document.getElementById('totalProductionLabel').textContent = t.totalProductionLabel;
-      document.getElementById('totalOutLabel').textContent = t.totalOutLabel;
-      document.getElementById('listTitle').textContent = t.listTitle;
-      document.getElementById('addBtnText').textContent = t.addNew;
-      document.getElementById('defectsBtnText').textContent = t.defects;
-      document.getElementById('filterAll').textContent = t.filterAll;
-      document.getElementById('filterProduction').textContent = t.filterProduction;
-      document.getElementById('filterOut').textContent = t.filterOut;
-      document.getElementById('searchInput').placeholder = t.searchPlaceholder;
-      document.getElementById('searchBtnText').textContent = t.searchButton;
-      document.getElementById('addModalTitleText').textContent = t.addModalTitle;
-      document.getElementById('editModalTitleText').textContent = t.editModalTitle;
-      document.getElementById('saveBtnText').textContent = t.saveButton;
-      
-      // Atualiza textos condicionais (se existirem no DOM)
-      if (document.getElementById('cancelBtnText')) {
-        document.getElementById('cancelBtnText').textContent = t.cancelButton;
-      }
-      if (document.getElementById('cancelEditBtnText')) {
-        document.getElementById('cancelEditBtnText').textContent = t.cancelButton;
-      }
-      if (document.getElementById('saveEditBtnText')) {
-        document.getElementById('saveEditBtnText').textContent = t.saveButton;
-      }
-      
-      // Re-renderiza os equipamentos e vídeos com os novos textos
-      renderEquipment(getCurrentPageData());
-      renderVideos(videoData);
-    }
+  currentLang = lang;
+  const t = translations[lang] || translations.pt;
+  
+  // Atualiza todos os textos da interface
+  document.getElementById('appTitle').textContent = t.appTitle;
+  document.querySelectorAll('.config-note').forEach(el => el.innerHTML = t.connected);
+  
+  // Dashboard
+  document.getElementById('totalEquipmentLabel').textContent = t.totalEquipmentLabel;
+  document.getElementById('totalProductionLabel').textContent = t.totalProductionLabel;
+  document.getElementById('totalOutLabel').textContent = t.totalOutLabel;
+  
+  // Abas - CORREÇÃO AQUI
+  document.getElementById('tabEquip').textContent = t.tabEquip;
+  document.getElementById('tabVideos').textContent = t.tabVideos;
+  document.getElementById('tabContato').textContent = t.tabContact;
+  
+  // Lista de equipamentos
+  document.getElementById('listTitle').textContent = t.listTitle;
+  document.getElementById('addBtnText').textContent = t.addNew;
+  document.getElementById('defectsBtnText').textContent = t.defects;
+  document.getElementById('filterAll').textContent = t.filterAll;
+  document.getElementById('filterProduction').textContent = t.filterProduction;
+  document.getElementById('filterOut').textContent = t.filterOut;
+  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+  document.getElementById('searchBtnText').textContent = t.searchButton;
+  
+  // Busca por voz - CORREÇÃO COMPLETA AQUI
+  const aiSearchTitle = document.querySelector('.ai-search-title span');
+  if (aiSearchTitle) aiSearchTitle.textContent = t.voiceSearchTitle;
+  
+  const aiSearchDesc = document.querySelector('.ai-search-description');
+  if (aiSearchDesc) aiSearchDesc.textContent = t.voiceSearchDesc;
+  
+  const voiceButton = document.getElementById('voiceSearchButton');
+  if (voiceButton) voiceButton.innerHTML = `<i class="fas fa-microphone"></i> ${t.voiceButton}`;
+  
+  const voiceIndicator = document.querySelector('.voice-indicator p');
+  if (voiceIndicator) voiceIndicator.textContent = t.listening;
+  
+  const aiSearchInput = document.getElementById('aiSearchInput');
+  if (aiSearchInput) aiSearchInput.placeholder = t.voiceSearchPlaceholder || 'Ou digite o prefixo do equipamento...';
+  
+  const aiSearchButton = document.getElementById('aiSearchButton');
+  if (aiSearchButton) aiSearchButton.innerHTML = `<i class="fas fa-search"></i> ${t.searchButton}`;
+  
+  // Modais de equipamentos
+  document.getElementById('addModalTitleText').textContent = t.addModalTitle;
+  document.getElementById('editModalTitleText').textContent = t.editModalTitle;
+  document.getElementById('equipmentDetailTitle').textContent = t.viewModalTitle;
+  
+  // Botões gerais
+  document.getElementById('saveBtnText').textContent = t.saveButton;
+  if (document.getElementById('cancelBtnText')) {
+    document.getElementById('cancelBtnText').textContent = t.cancelButton;
+  }
+  if (document.getElementById('cancelEditBtnText')) {
+    document.getElementById('cancelEditBtnText').textContent = t.cancelButton;
+  }
+  if (document.getElementById('saveEditBtnText')) {
+    document.getElementById('saveEditBtnText').textContent = t.saveButton;
+  }
+  
+  // Modal de defeitos
+  document.getElementById('defectsModalTitle').textContent = t.defectsModalTitle;
+  document.querySelector('label[for="defectSelect"]').textContent = t.selectDefect;
+  document.querySelector('#defectInfo label').textContent = t.defectInfo;
+  
+  // Vídeos - CORREÇÃO AQUI
+  const videosTitle = document.querySelector('#tabContentVideos h2 span');
+  if (videosTitle) {
+    videosTitle.innerHTML = `<i class="fas fa-video"></i> ${t.videosTitle}`;
+  }
+  
+  const videoSearchInput = document.getElementById('videoSearch');
+  if (videoSearchInput) videoSearchInput.placeholder = t.videoSearchPlaceholder;
+  
+  const videoAddTitle = document.querySelector('.video-add h3');
+  if (videoAddTitle) videoAddTitle.textContent = t.addVideoTitle;
+  
+  const videoTitleLabel = document.querySelector('label[for="videoTitulo"]');
+  if (videoTitleLabel) videoTitleLabel.textContent = t.videoTitle;
+  
+  const videoDescLabel = document.querySelector('label[for="videoDescricao"]');
+  if (videoDescLabel) videoDescLabel.textContent = t.videoDescription;
+  
+  const videoUrlLabel = document.querySelector('label[for="videoUrl"]');
+  if (videoUrlLabel) videoUrlLabel.textContent = t.videoUrl;
+  
+  const videoThumbLabel = document.querySelector('label[for="videoThumbnail"]');
+  if (videoThumbLabel) videoThumbLabel.textContent = t.videoThumbnail;
+  
+  const addVideoBtn = document.getElementById('addVideoBtn');
+  if (addVideoBtn) addVideoBtn.innerHTML = `<i class="fas fa-save"></i> ${t.saveVideo}`;
+  
+  // Contato - CORREÇÃO COMPLETA AQUI
+  const contactRole = document.querySelector('.contact-role');
+  if (contactRole) contactRole.textContent = t.contactRole;
+  
+  const contactPhoneLabel = document.querySelector('.contact-item:nth-child(1) .contact-label');
+  if (contactPhoneLabel) contactPhoneLabel.textContent = t.contactPhone;
+  
+  const contactEmailLabel = document.querySelector('.contact-item:nth-child(2) .contact-label');
+  if (contactEmailLabel) contactEmailLabel.textContent = t.contactEmail;
+  
+  const contactNote = document.querySelector('.contact-note');
+  if (contactNote) contactNote.innerHTML = `<i class="fas fa-info-circle"></i> ${t.contactNote}`;
+  
+  // Paginação
+  prevPage.innerHTML = `<i class="fas fa-chevron-left"></i> ${t.previous}`;
+  nextPage.innerHTML = `${t.next} <i class="fas fa-chevron-right"></i>`;
+  
+  // Ordenação
+  document.querySelector('option[value="prefix-asc"]').textContent = t.sortPrefixAsc;
+  document.querySelector('option[value="prefix-desc"]').textContent = t.sortPrefixDesc;
+  document.querySelector('option[value="date-newest"]').textContent = t.sortDateNewest;
+  document.querySelector('option[value="date-oldest"]').textContent = t.sortDateOldest;
+  
+  // Tema
+  const themeText = document.getElementById('themeText');
+  if (themeText) {
+    themeText.textContent = darkMode ? t.themeLight : t.themeDark;
+  }
+  
+  // Re-renderiza os equipamentos e vídeos com os novos textos
+  renderEquipment(getCurrentPageData());
+  renderVideos(videoData);
+}
 
     // Configura o seletor de idioma
     langToggle.addEventListener('change', (e) => {
@@ -2456,6 +2986,177 @@
       currentPage = 1; // Volta para a primeira página ao mudar a ordenação
       renderEquipment(getCurrentPageData());
     });
+    
+    // ===================================================================
+// SISTEMA DE ATALHOS DE TECLADO
+// ===================================================================
+
+/**
+ * CONFIGURA TODOS OS ATALHOS DE TECLADO
+ */
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + 1, 2, 3 - Alternar abas
+        if (e.ctrlKey && e.key >= '1' && e.key <= '3') {
+            e.preventDefault();
+            const tabIndex = parseInt(e.key) - 1;
+            const tabs = [tabEquip, tabVideos, tabContato];
+            if (tabs[tabIndex]) {
+                tabs[tabIndex].click();
+                showShortcutHint(`Aba ${tabs[tabIndex].textContent} ativada`);
+            }
+        }
+
+        // Ctrl + N - Novo equipamento
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            openAddModal();
+            showShortcutHint('Modal de novo equipamento aberto');
+        }
+
+        // Ctrl + F - Focar na busca
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+            showShortcutHint('Busca focada');
+        }
+
+        // Ctrl + K - Busca inteligente
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            aiSearchInput.focus();
+            aiSearchInput.select();
+            showShortcutHint('Busca inteligente focada');
+        }
+
+        // Ctrl + Espaço - Busca por voz
+        if (e.ctrlKey && e.key === ' ') {
+            e.preventDefault();
+            startVoiceRecognition();
+            showShortcutHint('Busca por voz ativada');
+        }
+
+        // Esc - Fechar modais
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal.show');
+            if (openModals.length > 0) {
+                openModals.forEach(modal => closeModal(modal));
+                showShortcutHint('Modal fechado');
+            }
+        }
+
+        // F1, F2, F3 - Filtros rápidos
+        if (e.key === 'F1') {
+            e.preventDefault();
+            document.querySelector('[data-filter="all"]').click();
+            showShortcutHint('Filtro: Todos ativado');
+        }
+        if (e.key === 'F2') {
+            e.preventDefault();
+            document.querySelector('[data-filter="production"]').click();
+            showShortcutHint('Filtro: Em produção ativado');
+        }
+        if (e.key === 'F3') {
+            e.preventDefault();
+            document.querySelector('[data-filter="out"]').click();
+            showShortcutHint('Filtro: Fora de produção ativado');
+        }
+
+        // Ctrl + T - Alternar tema
+        if (e.ctrlKey && e.key === 't') {
+            e.preventDefault();
+            toggleTheme();
+            showShortcutHint('Tema alternado');
+        }
+
+        // Ctrl + L - Alternar idioma
+        if (e.ctrlKey && e.key === 'l') {
+            e.preventDefault();
+            // Alterna entre Português e Inglês
+            const newLang = currentLang === 'pt' ? 'en' : 'pt';
+            langToggle.value = newLang;
+            applyLanguage(newLang);
+            showShortcutHint(`Idioma: ${newLang === 'pt' ? 'Português' : 'English'}`);
+        }
+
+        // Ctrl + S - Salvar (quando em modais)
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            const activeModal = document.querySelector('.modal.show');
+            if (activeModal && activeModal.id === 'addModal') {
+                addForm.requestSubmit();
+                showShortcutHint('Equipamento salvo');
+            }
+            if (activeModal && activeModal.id === 'editModal') {
+                editForm.requestSubmit();
+                showShortcutHint('Alterações salvas');
+            }
+        }
+
+        // Ctrl + → e Ctrl + ← - Navegação entre páginas
+        if (e.ctrlKey && e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (!nextPage.disabled) {
+                nextPage.click();
+                showShortcutHint('Próxima página');
+            }
+        }
+        if (e.ctrlKey && e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (!prevPage.disabled) {
+                prevPage.click();
+                showShortcutHint('Página anterior');
+            }
+        }
+
+        // Ctrl + ? - Mostrar ajuda de atalhos
+        if (e.ctrlKey && e.key === '?') {
+            e.preventDefault();
+            toggleShortcutHelp();
+        }
+    });
+}
+
+/**
+ * MOSTRA DICA RÁPIDA DO ATALHO EXECUTADO
+ */
+function showShortcutHint(message) {
+    const hint = document.getElementById('shortcutHint');
+    hint.innerHTML = `<div>${message}</div>`;
+    hint.classList.add('show');
+    
+    setTimeout(() => {
+        hint.classList.remove('show');
+    }, 2000);
+}
+
+/**
+ * ALTERNAR AJUDA COMPLETA DE ATALHOS
+ */
+function toggleShortcutHelp() {
+    const hint = document.getElementById('shortcutHint');
+    
+    if (hint.classList.contains('show')) {
+        hint.classList.remove('show');
+    } else {
+        hint.innerHTML = `
+            <div style="margin-bottom: 8px; font-weight: bold;">Atalhos de Teclado</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">1/2/3</span> Alternar Abas</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">N</span> Novo Equipamento</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">F</span> Buscar</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">K</span> Busca IA</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">Espaço</span> Voz</div>
+            <div><span class="shortcut-key">F1/F2/F3</span> Filtros</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">T</span> Tema</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">L</span> Idioma</div>
+            <div><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">S</span> Salvar</div>
+            <div><span class="shortcut-key">Esc</span> Fechar</div>
+            <div style="margin-top: 8px; font-size: 0.7rem; opacity: 0.7;">Pressione Ctrl + ? para fechar</div>
+        `;
+        hint.classList.add('show');
+    }
+}
     
     // ===================================================================
     // SISTEMA DE PAGINAÇÃO
@@ -2969,7 +3670,7 @@ Prateleira: ${eq.prateleira || ''}
             <span class="detail-value">${equipment.prateleira || '-'}</span>
           </div>
           
-          <div class="detail-section-title">Componentes</div>
+          <div class="detail-section-title">Terminações</div>
           
           <div class="detail-group">
             <span class="detail-label">Neckrings:</span>
@@ -3653,7 +4354,7 @@ document.getElementById('editGrafite').value = eq.grafite || '';
             <span class="detail-value">${eq.prateleira || '-'}</span>
           </div>
           
-          <div class="detail-section-title">Componentes</div>
+          <div class="detail-section-title">Terminações</div>
           
           <div class="detail-group">
             <span class="detail-label">Neckrings:</span>
@@ -4063,10 +4764,18 @@ document.getElementById('editGrafite').value = eq.grafite || '';
      * INICIALIZA TODOS OS COMPONENTES DO SISTEMA
      */
     function init() {
-      console.log('Iniciando sistema...');
+  console.log('Iniciando sistema...');
+  
+  // Inicializa o tema
+  initTheme();
+  
+  // Configura atalhos de teclado - ADICIONE ESTA LINHA
+  setupKeyboardShortcuts();
+  
+  // Configura a navegação por abas
+  setupTabNavigation();
       
-      // Inicializa o tema
-      initTheme();
+      
       
       // Configura a navegação por abas
       setupTabNavigation();
@@ -4290,10 +4999,10 @@ Solução: Realinhar equipamento, substituir componentes desgastados, verificar 
     // INICIALIZAÇÃO FINAL DO SISTEMA
     // ===================================================================
 
-    // Inicializa o sistema quando o DOM estiver carregado
+    // Inicia o sistema quando o DOM estiver carregado
     document.addEventListener('DOMContentLoaded', init);
 
-    // Fecha o modal de imagem ao clicar fora
+    // Fechamento do modal de imagem ao clicar fora
     document.getElementById('imageModal').addEventListener('click', (e) => {
       if (e.target === document.getElementById('imageModal')) {
         closeModal(document.getElementById('imageModal'));
