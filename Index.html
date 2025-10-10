@@ -2253,6 +2253,24 @@
     // ===================================================================
     // FUNÇÕES DE UTILIDADE DO SISTEMA
     // ===================================================================
+/**
+ * VERIFICA SE JÁ EXISTE UM EQUIPAMENTO COM O MESMO PREFIXO MOLDE
+ * @param {string} prefixoMolde - Prefixo a ser verificado
+ * @param {string} excludeId - ID a ser excluído da verificação (para edição)
+ * @returns {boolean} - True se já existe, False se não existe
+ */
+function checkExistingPrefix(prefixoMolde, excludeId = null) {
+    if (!prefixoMolde) return false;
+    
+    const prefixoUpper = prefixoMolde.toUpperCase().trim();
+    
+    return equipmentData.some(eq => {
+        // Se for edição, exclui o próprio equipamento da verificação
+        if (excludeId && eq.id === excludeId) return false;
+        
+        return eq.prefixoMolde && eq.prefixoMolde.toUpperCase().trim() === prefixoUpper;
+    });
+}
 
     /**
      * EXIBE NOTIFICAÇÕES TEMPORÁRIAS NA TELA
@@ -5080,185 +5098,223 @@ if (eq.urlImg1 || eq.urlImg2) {
     // ===================================================================
 
     // Formulário de adição de equipamento
-    addForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      // Coleta os dados do formulário
-      const equipment = {
-        prefixoMolde: document.getElementById('addPrefixoMolde').value,
-        prefixoBlank: document.getElementById('addPrefixoBlank').value,
-        processo: document.getElementById('addProcesso').value,
-        classe: document.getElementById('addClasse').value,
-        neckrings: document.getElementById('addNeckrings').value,
-        aneisGuias: document.getElementById('addAneisGuias').value,
-        thimble: document.getElementById('addThimble').value,
-        machos: document.getElementById('addMachos').value,
-        coolers: document.getElementById('addCoolers').value,
-        baffles: document.getElementById('addBaffles').value,
-        bafflesPlugs: document.getElementById('addBafflesPlugs').value,
-        funis: document.getElementById('addFunis').value,
-        fundos: document.getElementById('addFundos').value,
-        fundosPlugs: document.getElementById('addFundosPlugs').value,
-        sopradores: document.getElementById('addSopradores').value,
-        pincas: document.getElementById('addPincas').value,
-        moldeAlmox: document.getElementById('addMoldeAlmox').value,
-        blankAlmox: document.getElementById('addBlankAlmox').value,
-        corredor: document.getElementById('addCorredor').value,
-        prateleira: document.getElementById('addPrateleira').value,
-        observacoesTopo: document.getElementById('addObservacoesTopo').value,
-        polimentoMolde: document.getElementById('addPolimentoMolde').value,
-        polimentoBlank: document.getElementById('addPolimentoBlank').value,
-        polimentoBlank: document.getElementById('addPolimentoBlank').value,
-        
-        grafiteMolde: document.getElementById('addGrafiteMolde').value,
-        
-grafiteBlank: document.getElementById('addGrafiteBlank').value,
-
-grafiteFundo: document.getElementById('addGrafiteFundo').value,
-
-grafiteFunil: document.getElementById('addGrafiteFunil').value,
-          
-        observacaoAjustagem: document.getElementById('addObservacaoAjustagem').value,
-        
-        causasTroca: document.getElementById('addCausasTroca').value,
-        diametroGargaloMenos: document.getElementById('addDiametroGargaloMenos').value,
-        
-        diametroGargaloIdeal: document.getElementById('addDiametroGargaloIdeal').value,
-        
-        diametroGargaloMais: document.getElementById('addDiametroGargaloMais').value,
-        
-        diametroCorpoMenos: document.getElementById('addDiametroCorpoMenos').value,
-        
-        diametroCorpoIdeal: document.getElementById('addDiametroCorpoIdeal').value,
-        
-        diametroCorpoMais: document.getElementById('addDiametroCorpoMais').value,
-        
-        observacoesAdicionais: document.getElementById('addObservacoesAdicionais').value,
-        
-        status: document.getElementById('addStatus').value,
-        
-        urlImg1: document.getElementById('addUrlImg1').value,
-        
-        urlImg2: document.getElementById('addUrlImg2').value,
-        
-        linkImg1: document.getElementById('addLinkImg1').value,
-linkImg2: document.getElementById('addLinkImg2').value
-        
-      };
-      
-      
-     
-      try {
-        if (useFirestore && db) {
-          // Salva no Firestore
-          await addEquipmentToFirestore(equipment);
-        } else {
-          // Salva localmente
-          equipment.id = Date.now().toString();
-          equipment.criadoEm = new Date().toISOString();
-          equipmentData.push(equipment);
-          persistLocal();
-          renderEquipment(getCurrentPageData());
-        }
-        
-        showNotification('Equipamento adicionado com sucesso!');
-        closeModal(addModal);
-      } catch (err) {
-        console.error(err);
-        showNotification('Erro ao adicionar equipamento. Verifique o console.', 'error');
+addForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // Coleta o prefixo do molde
+  const prefixoMolde = document.getElementById('addPrefixoMolde').value.trim();
+  
+  // Verifica se já existe equipamento com este prefixo
+  if (checkExistingPrefix(prefixoMolde)) {
+      const confirmar = confirm(`⚠️ ATENÇÃO: Já existe um equipamento com o prefixo "${prefixoMolde}".\n\nDeseja continuar mesmo assim?`);
+      if (!confirmar) {
+          return; // Cancela o salvamento
       }
-    });
+  }
+  
+  // Coleta os dados do formulário
+  const equipment = {
+    prefixoMolde: prefixoMolde,
+    prefixoBlank: document.getElementById('addPrefixoBlank').value,
+    
+    processo: document.getElementById('addProcesso').value,
+    
+    classe: document.getElementById('addClasse').value,
+    
+    neckrings: document.getElementById('addNeckrings').value,
+    
+    aneisGuias: document.getElementById('addAneisGuias').value,
+    
+    thimble: document.getElementById('addThimble').value,
+    
+    machos: document.getElementById('addMachos').value,
+    
+    coolers: document.getElementById('addCoolers').value,
+    
+    baffles: document.getElementById('addBaffles').value,
+    
+    bafflesPlugs: document.getElementById('addBafflesPlugs').value,
+    
+    funis: document.getElementById('addFunis').value,
+    
+    fundos: document.getElementById('addFundos').value,
+    
+    fundosPlugs: document.getElementById('addFundosPlugs').value,
+    
+    sopradores: document.getElementById('addSopradores').value,
+    
+    pincas: document.getElementById('addPincas').value,
+    
+    moldeAlmox: document.getElementById('addMoldeAlmox').value,
+    
+    blankAlmox: document.getElementById('addBlankAlmox').value,
+    
+    corredor: document.getElementById('addCorredor').value,
+    
+    prateleira: document.getElementById('addPrateleira').value,
+    
+    observacoesTopo: document.getElementById('addObservacoesTopo').value,
+    
+    polimentoMolde: document.getElementById('addPolimentoMolde').value,
+    
+    polimentoBlank: document.getElementById('addPolimentoBlank').value,
+    
+    grafiteMolde: document.getElementById('addGrafiteMolde').value,
+    
+    grafiteBlank: document.getElementById('addGrafiteBlank').value,
+
+    grafiteFundo: document.getElementById('addGrafiteFundo').value,
+
+    grafiteFunil: document.getElementById('addGrafiteFunil').value,
+      
+    observacaoAjustagem: document.getElementById('addObservacaoAjustagem').value,
+    
+    causasTroca: document.getElementById('addCausasTroca').value,
+    diametroGargaloMenos: document.getElementById('addDiametroGargaloMenos').value,
+    
+    diametroGargaloIdeal: document.getElementById('addDiametroGargaloIdeal').value,
+    
+    diametroGargaloMais: document.getElementById('addDiametroGargaloMais').value,
+    
+    diametroCorpoMenos: document.getElementById('addDiametroCorpoMenos').value,
+    
+    diametroCorpoIdeal: document.getElementById('addDiametroCorpoIdeal').value,
+    
+    diametroCorpoMais: document.getElementById('addDiametroCorpoMais').value,
+    
+    observacoesAdicionais: document.getElementById('addObservacoesAdicionais').value,
+    
+    status: document.getElementById('addStatus').value,
+    
+    urlImg1: document.getElementById('addUrlImg1').value,
+    
+    urlImg2: document.getElementById('addUrlImg2').value,
+    
+    linkImg1: document.getElementById('addLinkImg1').value,
+    linkImg2: document.getElementById('addLinkImg2').value
+    
+  };
+  
+  try {
+    if (useFirestore && db) {
+      // Salva no Firestore
+      await addEquipmentToFirestore(equipment);
+    } else {
+      // Salva localmente
+      equipment.id = Date.now().toString();
+      equipment.criadoEm = new Date().toISOString();
+      equipmentData.push(equipment);
+      persistLocal();
+      renderEquipment(getCurrentPageData());
+    }
+    
+    showNotification('Equipamento adicionado com sucesso!');
+    closeModal(addModal);
+  } catch (err) {
+    console.error(err);
+    showNotification('Erro ao adicionar equipamento. Verifique o console.', 'error');
+  }
+});
 
     // Formulário de edição de equipamento
-    editForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const id = document.getElementById('editId').value;
-      
-      // Coleta os dados do formulário
-      const equipment = {
-        prefixoMolde: document.getElementById('editPrefixoMolde').value,
-        prefixoBlank: document.getElementById('editPrefixoBlank').value,
-        processo: document.getElementById('editProcesso').value,
-        classe: document.getElementById('editClasse').value,
-        
-        neckrings: document.getElementById('editNeckrings').value,
-        aneisGuias: document.getElementById('editAneisGuias').value,
-        thimble: document.getElementById('editThimble').value,
-        machos: document.getElementById('editMachos').value,
-        coolers: document.getElementById('editCoolers').value,
-        baffles: document.getElementById('editBaffles').value,
-        bafflesPlugs: document.getElementById('editBafflesPlugs').value,
-        funis: document.getElementById('editFunis').value,
-        fundos: document.getElementById('editFundos').value,
-        fundosPlugs: document.getElementById('editFundosPlugs').value,
-        sopradores: document.getElementById('editSopradores').value,
-        pincas: document.getElementById('editPincas').value,
-        moldeAlmox: document.getElementById('editMoldeAlmox').value,
-        blankAlmox: document.getElementById('editBlankAlmox').value,
-        corredor: document.getElementById('editCorredor').value,
-        prateleira: document.getElementById('editPrateleira').value,
-        observacoesTopo: document.getElementById('editObservacoesTopo').value,
-        polimentoMolde: document.getElementById('editPolimentoMolde').value,
-        polimentoBlank: document.getElementById('editPolimentoBlank').value,
-        
-        grafiteMolde: document.getElementById('editGrafiteMolde').value,
-        
-        grafiteBlank: document.getElementById('editGrafiteBlank').value,
-
-        grafiteFundo: document.getElementById('editGrafiteFundo').value,
-
-        grafiteFunil: document.getElementById('editGrafiteFunil').value,
-
-        observacaoAjustagem: document.getElementById('editObservacaoAjustagem').value,
-        
-        causasTroca: document.getElementById('editCausasTroca').value,
-        
-        diametroGargaloMenos: document.getElementById('editDiametroGargaloMenos').value,
-        
-        diametroGargaloIdeal: document.getElementById('editDiametroGargaloIdeal').value,
-        
-        diametroGargaloMais: document.getElementById('editDiametroGargaloMais').value,
-        
-        diametroCorpoMenos: document.getElementById('editDiametroCorpoMenos').value,
-        
-        diametroCorpoIdeal: document.getElementById('editDiametroCorpoIdeal').value,
-        
-        diametroCorpoMais: document.getElementById('editDiametroCorpoMais').value,
-        
-        observacoesAdicionais: document.getElementById('editObservacoesAdicionais').value,
-        
-        status: document.getElementById('editStatus').value,
-        urlImg1: document.getElementById('editUrlImg1').value,
-        
-        urlImg2: document.getElementById('editUrlImg2').value,
-        
-        linkImg1: document.getElementById('editLinkImg1').value,
-linkImg2: document.getElementById('editLinkImg2').value
-        
-      };
-      
-      try {
-        if (useFirestore && db) {
-          // Atualiza no Firestore
-          await updateEquipmentInFirestore(id, equipment);
-        } else {
-          // Atualiza localmente
-          const index = equipmentData.findIndex(x => x.id === id);
-          if (index !== -1) {
-            equipmentData[index] = { ...equipmentData[index], ...equipment };
-            persistLocal();
-            renderEquipment(getCurrentPageData());
-          }
-        }
-        
-        showNotification('Equipamento atualizado com sucesso!');
-        closeModal(editModal);
-      } catch (err) {
-        console.error(err);
-        showNotification('Erro ao atualizar equipamento. Verifique o console.', 'error');
+editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const id = document.getElementById('editId').value;
+  const prefixoMolde = document.getElementById('editPrefixoMolde').value.trim();
+  
+  // Verifica se já existe outro equipamento com este prefixo (excluindo o atual)
+  if (checkExistingPrefix(prefixoMolde, id)) {
+      const confirmar = confirm(`⚠️ ATENÇÃO: Já existe OUTRO equipamento com o prefixo "${prefixoMolde}".\n\nDeseja continuar mesmo assim?`);
+      if (!confirmar) {
+          return; // Cancela a edição
       }
-    });
+  }
+  
+  // Coleta os dados do formulário
+  const equipment = {
+    prefixoMolde: prefixoMolde,
+    prefixoBlank: document.getElementById('editPrefixoBlank').value,
+    processo: document.getElementById('editProcesso').value,
+    classe: document.getElementById('editClasse').value,
+    
+    neckrings: document.getElementById('editNeckrings').value,
+    aneisGuias: document.getElementById('editAneisGuias').value,
+    thimble: document.getElementById('editThimble').value,
+    machos: document.getElementById('editMachos').value,
+    coolers: document.getElementById('editCoolers').value,
+    baffles: document.getElementById('editBaffles').value,
+    bafflesPlugs: document.getElementById('editBafflesPlugs').value,
+    funis: document.getElementById('editFunis').value,
+    fundos: document.getElementById('editFundos').value,
+    fundosPlugs: document.getElementById('editFundosPlugs').value,
+    sopradores: document.getElementById('editSopradores').value,
+    pincas: document.getElementById('editPincas').value,
+    moldeAlmox: document.getElementById('editMoldeAlmox').value,
+    blankAlmox: document.getElementById('editBlankAlmox').value,
+    corredor: document.getElementById('editCorredor').value,
+    prateleira: document.getElementById('editPrateleira').value,
+    observacoesTopo: document.getElementById('editObservacoesTopo').value,
+    polimentoMolde: document.getElementById('editPolimentoMolde').value,
+    polimentoBlank: document.getElementById('editPolimentoBlank').value,
+    
+    grafiteMolde: document.getElementById('editGrafiteMolde').value,
+    
+    grafiteBlank: document.getElementById('editGrafiteBlank').value,
+
+    grafiteFundo: document.getElementById('editGrafiteFundo').value,
+
+    grafiteFunil: document.getElementById('editGrafiteFunil').value,
+
+    observacaoAjustagem: document.getElementById('editObservacaoAjustagem').value,
+    
+    causasTroca: document.getElementById('editCausasTroca').value,
+    
+    diametroGargaloMenos: document.getElementById('editDiametroGargaloMenos').value,
+    
+    diametroGargaloIdeal: document.getElementById('editDiametroGargaloIdeal').value,
+    
+    diametroGargaloMais: document.getElementById('editDiametroGargaloMais').value,
+    
+    diametroCorpoMenos: document.getElementById('editDiametroCorpoMenos').value,
+    
+    diametroCorpoIdeal: document.getElementById('editDiametroCorpoIdeal').value,
+    
+    diametroCorpoMais: document.getElementById('editDiametroCorpoMais').value,
+    
+    observacoesAdicionais: document.getElementById('editObservacoesAdicionais').value,
+    
+    status: document.getElementById('editStatus').value,
+    urlImg1: document.getElementById('editUrlImg1').value,
+    
+    urlImg2: document.getElementById('editUrlImg2').value,
+    
+    linkImg1: document.getElementById('editLinkImg1').value,
+    linkImg2: document.getElementById('editLinkImg2').value
+    
+  };
+  
+  try {
+    if (useFirestore && db) {
+      // Atualiza no Firestore
+      await updateEquipmentInFirestore(id, equipment);
+    } else {
+      // Atualiza localmente
+      const index = equipmentData.findIndex(x => x.id === id);
+      if (index !== -1) {
+        equipmentData[index] = { ...equipmentData[index], ...equipment };
+        persistLocal();
+        renderEquipment(getCurrentPageData());
+      }
+    }
+    
+    showNotification('Equipamento atualizado com sucesso!');
+    closeModal(editModal);
+  } catch (err) {
+    console.error(err);
+    showNotification('Erro ao atualizar equipamento. Verifique o console.', 'error');
+  }
+});
 
     // Formulário de edição de vídeo
     editVideoForm.addEventListener('submit', async (e) => {
