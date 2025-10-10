@@ -4843,34 +4843,68 @@ document.getElementById('editLinkImg2').value = eq.linkImg2 || '';
       const statusColor = eq.status === 'production' ? '#27ae60' : 
                          eq.status === 'sample' ? '#f39c12' : '#c0392b';
       
-      // Gera o HTML das imagens com links clicáveis
+      // Gera o HTML das imagens com links clicáveis - VERSÃO CORRIGIDA
 let imgHtml = '';
 if (eq.urlImg1 || eq.urlImg2) {
-  imgHtml = '<div style="display: flex; gap: 10px; margin-bottom: 20px;">';
+  imgHtml = '<div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">';
   
   if (eq.urlImg1) {
-    if (eq.linkImg1) {
-      // Se tem link, coloca a imagem dentro de um link clicável
-      imgHtml += `<a href="${eq.linkImg1}" target="_blank" style="text-decoration: none;">
-        <img src="${eq.urlImg1}" alt="Imagem 1" style="max-width: 100%; max-height: 300px; border-radius: 8px; cursor: pointer; border: 2px solid #3498db; transition: border-color 0.3s ease;">
-        <div style="text-align: center; margin-top: 5px; font-size: 0.8rem; color: #3498db;">🔗 Clique para abrir link</div>
-      </a>`;
+    if (eq.linkImg1 && eq.linkImg1.trim() !== '') {
+      // CORREÇÃO: Força a abertura em nova aba e previne problemas de URL
+      const link = eq.linkImg1.startsWith('http') ? eq.linkImg1 : 'https://' + eq.linkImg1;
+      imgHtml += `
+        <div style="text-align: center;">
+          <a href="${link}" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault(); window.open('${link}', '_blank');" style="text-decoration: none; display: block;">
+            <img src="${eq.urlImg1}" alt="Imagem 1" 
+                 style="max-width: 100%; max-height: 300px; border-radius: 8px; cursor: pointer; border: 2px solid #3498db; transition: all 0.3s ease;"
+                 onmouseover="this.style.borderColor='#e74c3c'; this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.borderColor='#3498db'; this.style.transform='scale(1)'">
+          </a>
+          <div style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: #3498db; font-weight: bold;">
+            🔗 Clique para abrir link externo
+          </div>
+          <div style="text-align: center; margin-top: 2px; font-size: 0.7rem; color: #7f8c8d; max-width: 300px; word-break: break-all;">
+            ${eq.linkImg1}
+          </div>
+        </div>
+      `;
     } else {
       // Se não tem link, mostra apenas a imagem
-      imgHtml += `<img src="${eq.urlImg1}" alt="Imagem 1" style="max-width: 100%; max-height: 100px; border-radius: 8px;">`;
+      imgHtml += `
+        <div style="text-align: center;">
+          <img src="${eq.urlImg1}" alt="Imagem 1" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+        </div>
+      `;
     }
   }
   
   if (eq.urlImg2) {
-    if (eq.linkImg2) {
-      // Se tem link, coloca a imagem dentro de um link clicável
-      imgHtml += `<a href="${eq.linkImg2}" target="_blank" style="text-decoration: none;">
-        <img src="${eq.urlImg2}" alt="Imagem 2" style="max-width: 100%; max-height: 300px; border-radius: 8px; cursor: pointer; border: 2px solid #3498db; transition: border-color 0.3s ease;">
-        <div style="text-align: center; margin-top: 5px; font-size: 0.8rem; color: #3498db;">🔗 Clique para abrir mais detalhes</div>
-      </a>`;
+    if (eq.linkImg2 && eq.linkImg2.trim() !== '') {
+      // CORREÇÃO: Força a abertura em nova aba e previne problemas de URL
+      const link = eq.linkImg2.startsWith('http') ? eq.linkImg2 : 'https://' + eq.linkImg2;
+      imgHtml += `
+        <div style="text-align: center;">
+          <a href="${link}" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault(); window.open('${link}', '_blank');" style="text-decoration: none; display: block;">
+            <img src="${eq.urlImg2}" alt="Imagem 2" 
+                 style="max-width: 100%; max-height: 300px; border-radius: 8px; cursor: pointer; border: 2px solid #3498db; transition: all 0.3s ease;"
+                 onmouseover="this.style.borderColor='#e74c3c'; this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.borderColor='#3498db'; this.style.transform='scale(1)'">
+          </a>
+          <div style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: #3498db; font-weight: bold;">
+            🔗 Clique para abrir link externo
+          </div>
+          <div style="text-align: center; margin-top: 2px; font-size: 0.7rem; color: #7f8c8d; max-width: 300px; word-break: break-all;">
+            ${eq.linkImg2}
+          </div>
+        </div>
+      `;
     } else {
       // Se não tem link, mostra apenas a imagem
-      imgHtml += `<img src="${eq.urlImg2}" alt="Imagem 2" style="max-width: 100%; max-height: 100px; border-radius: 8px;">`;
+      imgHtml += `
+        <div style="text-align: center;">
+          <img src="${eq.urlImg2}" alt="Imagem 2" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+        </div>
+      `;
     }
   }
   
