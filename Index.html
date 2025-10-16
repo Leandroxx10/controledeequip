@@ -483,40 +483,56 @@
     }
     
     /* ===== CONTROLES DE PAGINAÇÃO ===== */
-    .pagination-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      margin-top: 20px;
-      margin-bottom: 20px;
-    }
-    
-    .pagination-button {
-      padding: 8px 12px;
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      cursor: pointer;
-      color: var(--text-primary);
-      transition: all 0.3s ease;
-    }
-    
-    .pagination-button:hover:not(:disabled) {
-      background: var(--secondary);
-      color: white;
-    }
-    
-    .pagination-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .pagination-info {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-    }
-    
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  flex-wrap: wrap; /* melhora em telas menores */
+}
+
+.pagination-button {
+  padding: 10px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--secondary);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
     /* ===== ESTILOS PARA MODAIS ===== */
     .modal {
       display: none;
